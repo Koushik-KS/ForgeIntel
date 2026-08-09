@@ -9,6 +9,8 @@ import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
+import AddProduct from "./pages/AddProduct";
+
 
 function App() {
   return (
@@ -35,6 +37,11 @@ function App() {
               path="/products/:id"
               element={<ProductDetails />}
             />
+
+            <Route
+  path="/add-product"
+  element={<AddProduct />}
+/>
 
           </Routes>
 

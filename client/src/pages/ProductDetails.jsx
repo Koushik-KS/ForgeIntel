@@ -1,9 +1,12 @@
 import { useParams, Link } from "react-router-dom";
+
 import {
   ArrowLeft,
   CheckCircle2,
   AlertTriangle,
   FileText,
+  ShieldCheck,
+  Clock3,
 } from "lucide-react";
 
 import { products } from "../data/products";
@@ -28,55 +31,18 @@ function ProductDetails() {
     );
   }
 
-  const attributes = [
-    {
-      name: "Brand",
-      value: product.brand,
-      confidence: 98,
-      status: "Verified",
-      evidence: "Submitted product information",
-    },
-    {
-      name: "Category",
-      value: product.category,
-      confidence: 96,
-      status: "Verified",
-      evidence: "Product classification",
-    },
-    {
-      name: "Product Type",
-      value: product.name,
-      confidence: 94,
-      status: "Verified",
-      evidence: "Product name and catalog context",
-    },
-    {
-      name: "Material",
-      value: "Industrial-grade steel",
-      confidence: 91,
-      status: "Verified",
-      evidence: "Technical product documentation",
-    },
-    {
-      name: "Operating Pressure",
-      value: "250 bar",
-      confidence: 94,
-      status: "Verified",
-      evidence: "Manufacturer Technical Catalog — Page 12",
-    },
-    {
-      name: "Flow Rate",
-      value: "45 L/min",
-      confidence: 82,
-      status: "Needs Review",
-      evidence: "Technical specification — Page 8",
-    },
-  ];
+  const verifiedCount = product.attributes.filter(
+    (attribute) => attribute.status === "Verified"
+  ).length;
+
+  const reviewCount = product.attributes.filter(
+    (attribute) => attribute.status === "Needs Review"
+  ).length;
 
   return (
     <main className="dashboard">
 
-      {/* Header */}
+      {/* HEADER */}
 
       <div className="details-header">
 
@@ -86,7 +52,9 @@ function ProductDetails() {
             Back to Products
           </Link>
 
-          <p className="eyebrow">PRODUCT INTELLIGENCE</p>
+          <p className="eyebrow">
+            PRODUCT INTELLIGENCE
+          </p>
 
           <h1>{product.name}</h1>
 
@@ -113,55 +81,143 @@ function ProductDetails() {
 
       </div>
 
-      {/* Confidence */}
+      {/* PRODUCT SUMMARY */}
 
-      <section className="confidence-card">
+      <section className="product-summary-grid">
 
-        <div>
+        <div className="content-card summary-main">
+
           <span className="confidence-label">
             OVERALL CONFIDENCE
           </span>
 
-          <strong>{product.confidence}%</strong>
+          <strong className="overall-confidence">
+            {product.confidence}%
+          </strong>
+
+          <div className="large-confidence-bar">
+            <div
+              style={{
+                width: `${product.confidence}%`,
+              }}
+            ></div>
+          </div>
 
           <p>
-            Based on extracted attributes,
-            evidence and validation checks.
+            Confidence calculated from extracted
+            attributes, available evidence and
+            validation results.
           </p>
+
         </div>
 
-        <div className="large-confidence-bar">
-          <div
-            style={{
-              width: `${product.confidence}%`,
-            }}
-          ></div>
+        <div className="content-card summary-stat">
+
+          <ShieldCheck size={24} />
+
+          <strong>
+            {verifiedCount}
+          </strong>
+
+          <span>
+            Verified attributes
+          </span>
+
+        </div>
+
+        <div className="content-card summary-stat review-stat">
+
+          <Clock3 size={24} />
+
+          <strong>
+            {reviewCount}
+          </strong>
+
+          <span>
+            Attributes needing review
+          </span>
+
         </div>
 
       </section>
 
-      {/* Product Intelligence */}
+      {/* PRODUCT DESCRIPTION */}
 
-      <section className="content-card intelligence-card">
+      <section className="content-card description-card">
 
         <div className="section-header">
           <div>
-            <h2>Product Intelligence</h2>
+            <h2>Product Overview</h2>
 
             <p>
-              Every attribute includes confidence,
-              validation status and evidence.
+              Information provided or generated
+              for this product.
             </p>
           </div>
         </div>
 
+        <div className="description-content">
+
+          <div>
+            <span>PRODUCT</span>
+            <strong>{product.name}</strong>
+          </div>
+
+          <div>
+            <span>BRAND</span>
+            <strong>{product.brand}</strong>
+          </div>
+
+          <div>
+            <span>CATEGORY</span>
+            <strong>{product.category}</strong>
+          </div>
+
+          <div>
+            <span>SKU / PART NUMBER</span>
+            <strong>{product.sku}</strong>
+          </div>
+
+          <div className="description-full">
+            <span>DESCRIPTION</span>
+            <p>{product.description}</p>
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* ATTRIBUTES */}
+
+      <section className="content-card intelligence-card">
+
+        <div className="section-header">
+
+          <div>
+            <h2>Extracted Product Intelligence</h2>
+
+            <p>
+              Every attribute includes confidence,
+              validation status and traceable evidence.
+            </p>
+          </div>
+
+          <span className="attribute-count">
+            {product.attributes.length} attributes
+          </span>
+
+        </div>
+
         <div className="attributes-list">
 
-          {attributes.map((attribute) => (
+          {product.attributes.map((attribute) => (
+
             <div
               className="attribute-row"
               key={attribute.name}
             >
+
+              {/* ATTRIBUTE */}
 
               <div className="attribute-info">
 
@@ -174,23 +230,33 @@ function ProductDetails() {
                 </strong>
 
                 <div className="evidence">
+
                   <FileText size={14} />
 
                   <span>
                     {attribute.evidence}
                   </span>
+
+                </div>
+
+                <div className="source">
+                  Source: {attribute.source}
                 </div>
 
               </div>
 
+              {/* CONFIDENCE */}
+
               <div className="attribute-confidence">
 
                 <div className="attribute-bar">
+
                   <div
                     style={{
                       width: `${attribute.confidence}%`,
                     }}
                   ></div>
+
                 </div>
 
                 <strong>
@@ -199,6 +265,8 @@ function ProductDetails() {
 
               </div>
 
+              {/* STATUS */}
+
               <div
                 className={`status ${
                   attribute.status === "Verified"
@@ -206,6 +274,7 @@ function ProductDetails() {
                     : "review"
                 }`}
               >
+
                 {attribute.status === "Verified" ? (
                   <CheckCircle2 size={15} />
                 ) : (
@@ -213,94 +282,99 @@ function ProductDetails() {
                 )}
 
                 {attribute.status}
+
               </div>
 
             </div>
+
           ))}
 
         </div>
 
       </section>
 
-      {/* Validation */}
+      {/* EVIDENCE */}
 
-      <section className="content-card validation-card">
+      <section className="content-card evidence-card">
 
         <div className="section-header">
+
           <div>
-            <h2>Validation & Evidence</h2>
+            <h2>Evidence & Traceability</h2>
 
             <p>
-              ForgeIntel keeps evidence attached to
-              generated product information.
+              ForgeIntel links generated attributes
+              back to their supporting sources.
             </p>
           </div>
+
         </div>
 
-        <div className="validation-grid">
+        <div className="evidence-highlight">
 
-          <div className="validation-item verified-box">
-            <CheckCircle2 size={22} />
+          <FileText size={24} />
 
-            <div>
-              <strong>4 Attributes Verified</strong>
+          <div>
+            <strong>
+              Source-backed product intelligence
+            </strong>
 
-              <span>
-                Supported by available product evidence.
-              </span>
-            </div>
-          </div>
-
-          <div className="validation-item review-box">
-            <AlertTriangle size={22} />
-
-            <div>
-              <strong>1 Attribute Needs Review</strong>
-
-              <span>
-                Human validation recommended before publishing.
-              </span>
-            </div>
+            <p>
+              Each generated attribute stores its
+              evidence source so users can verify
+              where the information came from.
+            </p>
           </div>
 
         </div>
 
       </section>
 
-      {/* Human Review */}
+      {/* HUMAN REVIEW */}
 
-      <section className="content-card review-card">
+      {reviewCount > 0 && (
 
-        <div className="section-header">
-          <div>
-            <h2>Human Review</h2>
+        <section className="content-card review-card">
 
-            <p>
-              Review uncertain information before
-              publishing it to the catalog.
-            </p>
+          <div className="section-header">
+
+            <div>
+              <h2>Human Review Required</h2>
+
+              <p>
+                Some attributes have lower confidence
+                and should be reviewed before publishing.
+              </p>
+            </div>
+
+            <div className="status review">
+              <AlertTriangle size={15} />
+              {reviewCount} to review
+            </div>
+
           </div>
-        </div>
 
-        <div className="review-actions">
+          <div className="review-actions">
 
-          <button className="review-accept">
-            <CheckCircle2 size={17} />
-            Accept
-          </button>
+            <button className="review-accept">
+              <CheckCircle2 size={17} />
+              Accept
+            </button>
 
-          <button className="review-edit">
-            Edit Attribute
-          </button>
+            <button className="review-edit">
+              Edit Attribute
+            </button>
 
-          <button className="review-reject">
-            <AlertTriangle size={17} />
-            Reject
-          </button>
+            <button className="review-reject">
+              <AlertTriangle size={17} />
+              Reject
+            </button>
 
-        </div>
+          </div>
 
-      </section>
+        </section>
+
+      )}
 
     </main>
   );

@@ -6,6 +6,8 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
+import { Link } from "react-router-dom";
+
 const products = [
   {
     name: "Industrial Hydraulic Pump",
@@ -48,11 +50,14 @@ function Dashboard() {
             Monitor product enrichment, validation and data quality.
           </p>
         </div>
-
-        <button className="primary-button">
-          <ArrowUpRight size={18} />
-          Add Product
-        </button>
+<Link
+  to="/add-product"
+  className="primary-button"
+>
+  <ArrowUpRight size={18} />
+  Add Product
+</Link>
+         
       </div>
 
       <section className="stats-grid">
