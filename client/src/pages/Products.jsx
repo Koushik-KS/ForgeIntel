@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+
 import {
   Search,
   Filter,
@@ -7,6 +9,7 @@ import {
   AlertTriangle,
   ChevronRight,
 } from "lucide-react";
+
 import { products } from "../data/products";
 
 function Products() {
@@ -34,12 +37,19 @@ function Products() {
       const matchesCategory =
         category === "All" || product.category === category;
 
-      return matchesSearch && matchesStatus && matchesCategory;
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesCategory
+      );
     });
   }, [search, status, category]);
 
   return (
     <main className="dashboard">
+
+      {/* PAGE HEADER */}
+
       <div className="page-header">
         <div>
           <p className="eyebrow">CATALOG</p>
@@ -57,8 +67,14 @@ function Products() {
         </button>
       </div>
 
+      {/* PRODUCT CATALOG */}
+
       <section className="content-card products-card">
+
+        {/* SEARCH + FILTERS */}
+
         <div className="catalog-toolbar">
+
           <div className="search-box">
             <Search size={18} />
 
@@ -75,29 +91,51 @@ function Products() {
 
             <select
               value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={(e) =>
+                setStatus(e.target.value)
+              }
             >
-              <option value="All">All Status</option>
-              <option value="Verified">Verified</option>
-              <option value="Needs Review">Needs Review</option>
+              <option value="All">
+                All Status
+              </option>
+
+              <option value="Verified">
+                Verified
+              </option>
+
+              <option value="Needs Review">
+                Needs Review
+              </option>
             </select>
 
             <select
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) =>
+                setCategory(e.target.value)
+              }
             >
               {categories.map((item) => (
-                <option key={item} value={item}>
-                  {item === "All" ? "All Categories" : item}
+                <option
+                  key={item}
+                  value={item}
+                >
+                  {item === "All"
+                    ? "All Categories"
+                    : item}
                 </option>
               ))}
             </select>
           </div>
         </div>
 
+        {/* SUMMARY */}
+
         <div className="catalog-summary">
           <div>
-            <strong>{filteredProducts.length}</strong>
+            <strong>
+              {filteredProducts.length}
+            </strong>
+
             <span> products found</span>
           </div>
 
@@ -106,7 +144,10 @@ function Products() {
           </span>
         </div>
 
+        {/* TABLE */}
+
         <div className="product-table">
+
           <div className="table-header products-header">
             <span>Product</span>
             <span>Category</span>
@@ -116,26 +157,44 @@ function Products() {
           </div>
 
           {filteredProducts.length > 0 ? (
+
             filteredProducts.map((product) => (
-              <div className="table-row products-row" key={product.id}>
+
+              <div
+                className="table-row products-row"
+                key={product.id}
+              >
+
+                {/* PRODUCT */}
+
                 <div className="product-name">
+
                   <div className="product-avatar">
                     {product.name.charAt(0)}
                   </div>
 
                   <div>
-                    <strong>{product.name}</strong>
+                    <strong>
+                      {product.name}
+                    </strong>
+
                     <span>
                       {product.sku} · {product.brand}
                     </span>
                   </div>
+
                 </div>
+
+                {/* CATEGORY */}
 
                 <span className="category">
                   {product.category}
                 </span>
 
+                {/* CONFIDENCE */}
+
                 <div className="confidence">
+
                   <div className="confidence-bar">
                     <div
                       style={{
@@ -144,8 +203,13 @@ function Products() {
                     ></div>
                   </div>
 
-                  <span>{product.confidence}%</span>
+                  <span>
+                    {product.confidence}%
+                  </span>
+
                 </div>
+
+                {/* STATUS */}
 
                 <span
                   className={`status ${
@@ -154,6 +218,7 @@ function Products() {
                       : "review"
                   }`}
                 >
+
                   {product.status === "Verified" ? (
                     <CheckCircle2 size={15} />
                   ) : (
@@ -161,27 +226,46 @@ function Products() {
                   )}
 
                   {product.status}
+
                 </span>
 
-                <button className="view-product">
+                {/* VIEW BUTTON */}
+
+                <Link
+                  to={`/products/${product.id}`}
+                  className="view-product"
+                >
                   View
+
                   <ChevronRight size={16} />
-                </button>
+                </Link>
+
               </div>
+
             ))
+
           ) : (
+
             <div className="empty-products">
+
               <Package size={34} />
 
-              <strong>No products found</strong>
+              <strong>
+                No products found
+              </strong>
 
               <span>
                 Try changing your search or filters.
               </span>
+
             </div>
+
           )}
+
         </div>
+
       </section>
+
     </main>
   );
 }

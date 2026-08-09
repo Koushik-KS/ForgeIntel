@@ -807,3 +807,274 @@ a {
     width: 100%;
   }
 }
+
+/* =========================================================
+   PRODUCT DETAILS
+========================================================= */
+
+.details-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 25px;
+  gap: 20px;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #62748a;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+
+.back-link:hover {
+  color: #2876d5;
+}
+
+.confidence-card {
+  background: white;
+  border: 1px solid #e5eaf1;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 20px;
+}
+
+.confidence-label {
+  display: block;
+  color: #718096;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  margin-bottom: 8px;
+}
+
+.confidence-card strong {
+  display: block;
+  font-size: 38px;
+  color: #0b1f3a;
+}
+
+.confidence-card p {
+  color: #8190a4;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.large-confidence-bar {
+  height: 8px;
+  width: 100%;
+  margin-top: 20px;
+  border-radius: 20px;
+  background: #e8edf3;
+  overflow: hidden;
+}
+
+.large-confidence-bar div {
+  height: 100%;
+  border-radius: inherit;
+  background: #2876d5;
+}
+
+.intelligence-card,
+.validation-card,
+.review-card {
+  margin-bottom: 20px;
+}
+
+.attributes-list {
+  width: 100%;
+}
+
+.attribute-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  align-items: center;
+  gap: 30px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.attribute-row:last-child {
+  border-bottom: none;
+}
+
+.attribute-name {
+  display: block;
+  color: #8190a4;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.attribute-info strong {
+  display: block;
+  color: #0b1f3a;
+  font-size: 15px;
+}
+
+.evidence {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #8190a4;
+  font-size: 11px;
+  margin-top: 8px;
+}
+
+.attribute-confidence {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.attribute-bar {
+  width: 80px;
+  height: 5px;
+  border-radius: 20px;
+  background: #e8edf3;
+  overflow: hidden;
+}
+
+.attribute-bar div {
+  height: 100%;
+  border-radius: inherit;
+  background: #2876d5;
+}
+
+.attribute-confidence strong {
+  font-size: 12px;
+  color: #40516a;
+}
+
+.validation-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  padding: 22px 24px;
+}
+
+.validation-item {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 17px;
+  border-radius: 10px;
+}
+
+.validation-item strong {
+  display: block;
+  font-size: 13px;
+}
+
+.validation-item span {
+  display: block;
+  color: #718096;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.verified-box {
+  color: #218657;
+  background: #e9f8f0;
+}
+
+.review-box {
+  color: #c46b1d;
+  background: #fff2e5;
+}
+
+.review-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 24px;
+}
+
+.review-actions button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.review-accept {
+  border: none;
+  background: #218657;
+  color: white;
+}
+
+.review-edit {
+  border: 1px solid #dce3eb;
+  background: white;
+  color: #40516a;
+}
+
+.review-reject {
+  border: 1px solid #e6c6c6;
+  background: #fff7f7;
+  color: #c23d3d;
+}
+
+.review-accept:hover {
+  background: #18734a;
+}
+
+.review-edit:hover {
+  background: #f5f7fa;
+}
+
+.review-reject:hover {
+  background: #fff0f0;
+}
+
+/* Product Details Responsive */
+
+@media (max-width: 900px) {
+  .attribute-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .attribute-row .status {
+    grid-column: 1 / -1;
+  }
+
+  .validation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .details-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .attribute-row {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .attribute-row .status {
+    grid-column: auto;
+  }
+
+  .validation-grid {
+    padding: 16px;
+  }
+
+  .review-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .review-actions button {
+    justify-content: center;
+  }
+}
