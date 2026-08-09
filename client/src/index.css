@@ -1576,3 +1576,258 @@ a {
     justify-content: center;
   }
 }
+
+/* =========================================================
+   INTELLIGENCE PROCESSING
+========================================================= */
+
+.processing-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+
+.processing-wrapper {
+  width: 100%;
+  max-width: 900px;
+  padding-top: 30px;
+}
+
+.processing-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.processing-logo {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 15px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  background: #fff0e6;
+  color: #f27624;
+}
+
+.processing-header .eyebrow {
+  margin-bottom: 8px;
+}
+
+.processing-header h1 {
+  font-size: 28px;
+  color: #0b1f3a;
+}
+
+.processing-header p:last-child {
+  color: #718096;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.processing-header strong {
+  color: #40516a;
+}
+
+.processing-card {
+  padding: 26px;
+}
+
+.processing-progress {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 25px;
+}
+
+.processing-progress-bar {
+  flex: 1;
+  height: 7px;
+  border-radius: 20px;
+  background: #e8edf3;
+  overflow: hidden;
+}
+
+.processing-progress-bar div {
+  height: 100%;
+  border-radius: inherit;
+  background: #f27624;
+  transition: width 0.5s ease;
+}
+
+.processing-progress > span {
+  min-width: 130px;
+  text-align: right;
+  color: #718096;
+  font-size: 11px;
+}
+
+.processing-steps {
+  display: flex;
+  flex-direction: column;
+}
+
+.processing-step {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-height: 75px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #edf0f4;
+  transition: 0.3s ease;
+}
+
+.processing-step:last-child {
+  border-bottom: none;
+}
+
+.step-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #f1f4f8;
+  color: #9aa7b7;
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-content strong {
+  display: block;
+  color: #718096;
+  font-size: 13px;
+}
+
+.step-content p {
+  color: #9aa7b7;
+  font-size: 10px;
+  margin-top: 4px;
+}
+
+.step-status {
+  color: #a0adbc;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.step-current {
+  background: #fff9f5;
+  border-radius: 9px;
+}
+
+.step-current .step-icon {
+  background: #fff0e6;
+  color: #f27624;
+}
+
+.step-current .step-content strong {
+  color: #0b1f3a;
+}
+
+.step-current .step-status {
+  color: #f27624;
+}
+
+.step-complete .step-icon {
+  background: #e8f8ef;
+  color: #229a64;
+}
+
+.step-complete .step-content strong {
+  color: #40516a;
+}
+
+.step-complete .step-status {
+  color: #229a64;
+}
+
+.spin {
+  animation: processing-spin 1s linear infinite;
+}
+
+@keyframes processing-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.processing-complete {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 22px;
+  padding: 17px;
+  border-radius: 10px;
+  background: #edf9f2;
+}
+
+.complete-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #d8f3e3;
+  color: #229a64;
+  flex-shrink: 0;
+}
+
+.processing-complete > div:nth-child(2) {
+  flex: 1;
+}
+
+.processing-complete strong {
+  display: block;
+  color: #185d3e;
+  font-size: 13px;
+}
+
+.processing-complete p {
+  color: #5e8a72;
+  font-size: 10px;
+  margin-top: 4px;
+}
+
+.processing-complete .generate-button {
+  flex-shrink: 0;
+}
+
+@media (max-width: 650px) {
+  .processing-wrapper {
+    padding-top: 10px;
+  }
+
+  .processing-header h1 {
+    font-size: 23px;
+  }
+
+  .processing-card {
+    padding: 16px;
+  }
+
+  .processing-progress {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .processing-progress > span {
+    text-align: left;
+  }
+
+  .processing-complete {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .processing-complete .generate-button {
+    width: 100%;
+    justify-content: center;
+  }
+}

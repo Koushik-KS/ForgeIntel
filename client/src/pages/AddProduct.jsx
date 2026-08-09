@@ -57,23 +57,24 @@ function AddProduct() {
     setDocument(null);
   };
 
-  const handleGenerate = (event) => {
-    event.preventDefault();
+ const handleGenerate = (event) => {
+  event.preventDefault();
 
-    if (!formData.name.trim()) {
-      alert("Please enter a product name.");
-      return;
-    }
+  if (!formData.name.trim()) {
+    alert("Please enter a product name.");
+    return;
+  }
 
-    /*
-      Temporary local demo flow.
-
-      Later this button will call:
-      Frontend → Backend → AI Extraction → Enrichment → Validation
-    */
-
-    navigate("/products/1");
-  };
+  navigate("/processing", {
+    state: {
+      product: {
+        ...formData,
+        imageName: image?.name || null,
+        documentName: document?.name || null,
+      },
+    },
+  });
+};
 
   return (
     <main className="dashboard">

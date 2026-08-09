@@ -10,7 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
 import AddProduct from "./pages/AddProduct";
-
+import Processing from "./pages/Processing";
 
 function App() {
   return (
@@ -41,6 +41,11 @@ function App() {
             <Route
   path="/add-product"
   element={<AddProduct />}
+/>
+
+<Route
+  path="/processing"
+  element={<Processing />}
 />
 
           </Routes>
