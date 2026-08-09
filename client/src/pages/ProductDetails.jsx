@@ -14,19 +14,49 @@ import { products } from "../data/products";
 function ProductDetails() {
   const { id } = useParams();
 
-  const product = products.find(
+  // Get the latest locally generated product
+  const generatedProduct = JSON.parse(
+    localStorage.getItem("forgeintel_generated_product") || "null"
+  );
+
+  // Get existing demo product
+  const staticProduct = products.find(
     (item) => item.id === Number(id)
   );
 
+  // Decide which product to display
+  const product =
+    generatedProduct?.id === id
+      ? generatedProduct
+      : staticProduct;
+
+  // Product not found
   if (!product) {
     return (
       <main className="dashboard">
-        <h1>Product not found</h1>
 
-        <Link to="/products" className="back-link">
+        <div className="details-header">
+          <div>
+            <p className="eyebrow">
+              PRODUCT INTELLIGENCE
+            </p>
+
+            <h1>Product Not Found</h1>
+
+            <p className="page-description">
+              The requested product could not be found.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          to="/products"
+          className="back-link"
+        >
           <ArrowLeft size={17} />
           Back to Products
         </Link>
+
       </main>
     );
   }
@@ -42,12 +72,18 @@ function ProductDetails() {
   return (
     <main className="dashboard">
 
-      {/* HEADER */}
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
       <div className="details-header">
 
         <div>
-          <Link to="/products" className="back-link">
+
+          <Link
+            to="/products"
+            className="back-link"
+          >
             <ArrowLeft size={17} />
             Back to Products
           </Link>
@@ -56,11 +92,14 @@ function ProductDetails() {
             PRODUCT INTELLIGENCE
           </p>
 
-          <h1>{product.name}</h1>
+          <h1>
+            {product.name}
+          </h1>
 
           <p className="page-description">
             {product.brand} · {product.sku}
           </p>
+
         </div>
 
         <div
@@ -70,6 +109,7 @@ function ProductDetails() {
               : "review"
           }`}
         >
+
           {product.status === "Verified" ? (
             <CheckCircle2 size={16} />
           ) : (
@@ -77,11 +117,14 @@ function ProductDetails() {
           )}
 
           {product.status}
+
         </div>
 
       </div>
 
-      {/* PRODUCT SUMMARY */}
+      {/* =====================================================
+          PRODUCT SUMMARY
+      ===================================================== */}
 
       <section className="product-summary-grid">
 
@@ -96,11 +139,13 @@ function ProductDetails() {
           </strong>
 
           <div className="large-confidence-bar">
+
             <div
               style={{
                 width: `${product.confidence}%`,
               }}
             ></div>
+
           </div>
 
           <p>
@@ -141,65 +186,98 @@ function ProductDetails() {
 
       </section>
 
-      {/* PRODUCT DESCRIPTION */}
+      {/* =====================================================
+          PRODUCT OVERVIEW
+      ===================================================== */}
 
       <section className="content-card description-card">
 
         <div className="section-header">
+
           <div>
-            <h2>Product Overview</h2>
+
+            <h2>
+              Product Overview
+            </h2>
 
             <p>
               Information provided or generated
               for this product.
             </p>
+
           </div>
+
         </div>
 
         <div className="description-content">
 
           <div>
             <span>PRODUCT</span>
-            <strong>{product.name}</strong>
+
+            <strong>
+              {product.name}
+            </strong>
           </div>
 
           <div>
             <span>BRAND</span>
-            <strong>{product.brand}</strong>
+
+            <strong>
+              {product.brand}
+            </strong>
           </div>
 
           <div>
             <span>CATEGORY</span>
-            <strong>{product.category}</strong>
+
+            <strong>
+              {product.category}
+            </strong>
           </div>
 
           <div>
             <span>SKU / PART NUMBER</span>
-            <strong>{product.sku}</strong>
+
+            <strong>
+              {product.sku}
+            </strong>
           </div>
 
           <div className="description-full">
-            <span>DESCRIPTION</span>
-            <p>{product.description}</p>
+
+            <span>
+              DESCRIPTION
+            </span>
+
+            <p>
+              {product.description}
+            </p>
+
           </div>
 
         </div>
 
       </section>
 
-      {/* ATTRIBUTES */}
+      {/* =====================================================
+          EXTRACTED PRODUCT INTELLIGENCE
+      ===================================================== */}
 
       <section className="content-card intelligence-card">
 
         <div className="section-header">
 
           <div>
-            <h2>Extracted Product Intelligence</h2>
+
+            <h2>
+              Extracted Product Intelligence
+            </h2>
 
             <p>
               Every attribute includes confidence,
               validation status and traceable evidence.
             </p>
+
           </div>
 
           <span className="attribute-count">
@@ -240,8 +318,12 @@ function ProductDetails() {
                 </div>
 
                 <div className="source">
-                  Source: {attribute.source}
-                </div>
+  Source: {attribute.source}
+</div>
+
+<div className="evidence-type">
+  Evidence Type: {attribute.evidenceType}
+</div>
 
               </div>
 
@@ -293,19 +375,25 @@ function ProductDetails() {
 
       </section>
 
-      {/* EVIDENCE */}
+      {/* =====================================================
+          EVIDENCE & TRACEABILITY
+      ===================================================== */}
 
       <section className="content-card evidence-card">
 
         <div className="section-header">
 
           <div>
-            <h2>Evidence & Traceability</h2>
+
+            <h2>
+              Evidence & Traceability
+            </h2>
 
             <p>
               ForgeIntel links generated attributes
               back to their supporting sources.
             </p>
+
           </div>
 
         </div>
@@ -315,6 +403,7 @@ function ProductDetails() {
           <FileText size={24} />
 
           <div>
+
             <strong>
               Source-backed product intelligence
             </strong>
@@ -324,13 +413,16 @@ function ProductDetails() {
               evidence source so users can verify
               where the information came from.
             </p>
+
           </div>
 
         </div>
 
       </section>
 
-      {/* HUMAN REVIEW */}
+      {/* =====================================================
+          HUMAN REVIEW
+      ===================================================== */}
 
       {reviewCount > 0 && (
 
@@ -339,33 +431,49 @@ function ProductDetails() {
           <div className="section-header">
 
             <div>
-              <h2>Human Review Required</h2>
+
+              <h2>
+                Human Review Required
+              </h2>
 
               <p>
                 Some attributes have lower confidence
                 and should be reviewed before publishing.
               </p>
+
             </div>
 
             <div className="status review">
+
               <AlertTriangle size={15} />
+
               {reviewCount} to review
+
             </div>
 
           </div>
 
           <div className="review-actions">
 
-            <button className="review-accept">
+            <button
+              type="button"
+              className="review-accept"
+            >
               <CheckCircle2 size={17} />
               Accept
             </button>
 
-            <button className="review-edit">
+            <button
+              type="button"
+              className="review-edit"
+            >
               Edit Attribute
             </button>
 
-            <button className="review-reject">
+            <button
+              type="button"
+              className="review-reject"
+            >
               <AlertTriangle size={17} />
               Reject
             </button>

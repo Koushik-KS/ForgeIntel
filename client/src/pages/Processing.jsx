@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+
 import {
   CheckCircle2,
   LoaderCircle,
@@ -9,6 +10,8 @@ import {
   Database,
   ArrowRight,
 } from "lucide-react";
+
+import { generateProductIntelligence } from "../services/intelligenceEngine";
 
 const processingSteps = [
   {
@@ -81,6 +84,14 @@ function Processing() {
     });
 
     const finishTimer = setTimeout(() => {
+      const intelligence =
+        generateProductIntelligence(product);
+
+      localStorage.setItem(
+        "forgeintel_generated_product",
+        JSON.stringify(intelligence)
+      );
+
       setComplete(true);
     }, processingSteps.length * 900 + 500);
 
@@ -92,7 +103,15 @@ function Processing() {
   }, [product, navigate]);
 
   const handleContinue = () => {
-    navigate("/products/1");
+    const intelligence =
+      generateProductIntelligence(product);
+
+    localStorage.setItem(
+      "forgeintel_generated_product",
+      JSON.stringify(intelligence)
+    );
+
+    navigate(`/products/${intelligence.id}`);
   };
 
   return (
@@ -132,6 +151,7 @@ function Processing() {
           <div className="processing-progress">
 
             <div className="processing-progress-bar">
+
               <div
                 style={{
                   width: `${Math.min(
@@ -142,6 +162,7 @@ function Processing() {
                   )}%`,
                 }}
               ></div>
+
             </div>
 
             <span>
@@ -152,7 +173,7 @@ function Processing() {
 
           </div>
 
-          {/* STEPS */}
+          {/* PROCESSING STEPS */}
 
           <div className="processing-steps">
 
@@ -160,11 +181,12 @@ function Processing() {
 
               const Icon = step.icon;
 
-             const isComplete =
-  complete || currentStep > step.id;
+              const isComplete =
+                complete || currentStep > step.id;
 
-const isCurrent =
-  !complete && currentStep === step.id;
+              const isCurrent =
+                !complete &&
+                currentStep === step.id;
 
               return (
                 <div
@@ -217,6 +239,7 @@ const isCurrent =
 
                 </div>
               );
+
             })}
 
           </div>
@@ -224,6 +247,7 @@ const isCurrent =
           {/* COMPLETE */}
 
           {complete && (
+
             <div className="processing-complete">
 
               <div className="complete-icon">
@@ -242,6 +266,7 @@ const isCurrent =
               </div>
 
               <button
+                type="button"
                 onClick={handleContinue}
                 className="generate-button"
               >
@@ -250,6 +275,7 @@ const isCurrent =
               </button>
 
             </div>
+
           )}
 
         </section>

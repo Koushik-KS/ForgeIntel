@@ -1831,3 +1831,10 @@ a {
     justify-content: center;
   }
 }
+
+.evidence-type {
+  margin-top: 4px;
+  font-size: 9px;
+  color: #2876d5;
+  font-weight: 700;
+}
