@@ -4,174 +4,418 @@ import {
   AlertTriangle,
   TrendingUp,
   ArrowUpRight,
+  ChevronRight,
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
 
-const products = [
-  {
-    name: "Industrial Hydraulic Pump",
-    sku: "HYD-450",
-    category: "Hydraulic Equipment",
-    confidence: 94,
-    status: "Verified",
-  },
-  {
-    name: "Deep Groove Ball Bearing",
-    sku: "SKF-6205",
-    category: "Bearings",
-    confidence: 91,
-    status: "Verified",
-  },
-  {
-    name: "Industrial Electric Motor",
-    sku: "MTR-220",
-    category: "Electric Motors",
-    confidence: 86,
-    status: "Needs Review",
-  },
-  {
-    name: "Pneumatic Control Valve",
-    sku: "PCV-110",
-    category: "Valves",
-    confidence: 78,
-    status: "Needs Review",
-  },
-];
+import { products as demoProducts } from "../data/products";
 
 function Dashboard() {
+  // =====================================================
+  // GENERATED PRODUCT
+  // =====================================================
+
+  const generatedProduct = JSON.parse(
+    localStorage.getItem(
+      "forgeintel_generated_product"
+    ) || "null"
+  );
+
+  // =====================================================
+  // CATALOG
+  // =====================================================
+
+  const catalogProducts = generatedProduct
+    ? [
+        generatedProduct,
+        ...demoProducts.filter(
+          (product) =>
+            String(product.id) !==
+            String(generatedProduct.id)
+        ),
+      ]
+    : demoProducts;
+
+  // =====================================================
+  // STATISTICS
+  // =====================================================
+
+  const totalProducts =
+    catalogProducts.length;
+
+  const verifiedProducts =
+    catalogProducts.filter(
+      (product) =>
+        product.status === "Verified"
+    ).length;
+
+  const reviewProducts =
+    catalogProducts.filter(
+      (product) =>
+        product.status === "Needs Review"
+    ).length;
+
+  const averageConfidence =
+    totalProducts > 0
+      ? Math.round(
+          catalogProducts.reduce(
+            (total, product) =>
+              total +
+              Number(product.confidence || 0),
+            0
+          ) / totalProducts
+        )
+      : 0;
+
+  const verifiedPercentage =
+    totalProducts > 0
+      ? Math.round(
+          (verifiedProducts /
+            totalProducts) *
+            100
+        )
+      : 0;
+
+  const reviewPercentage =
+    totalProducts > 0
+      ? Math.round(
+          (reviewProducts /
+            totalProducts) *
+            100
+        )
+      : 0;
+
+  // =====================================================
+  // RECENT PRODUCTS
+  // =====================================================
+
+  const recentProducts =
+    catalogProducts.slice(0, 5);
+
+  // =====================================================
+  // RENDER
+  // =====================================================
+
   return (
     <main className="dashboard">
+
+      {/* =================================================
+          PAGE HEADER
+      ================================================= */}
+
       <div className="page-header">
+
         <div>
-          <p className="eyebrow">OVERVIEW</p>
-          <h1>Product Intelligence</h1>
-          <p className="page-description">
-            Monitor product enrichment, validation and data quality.
+
+          <p className="eyebrow">
+            OVERVIEW
           </p>
+
+          <h1>
+            Product Intelligence
+          </h1>
+
+          <p className="page-description">
+            Monitor product enrichment, validation
+            and data quality.
+          </p>
+
         </div>
-<Link
-  to="/add-product"
-  className="primary-button"
->
-  <ArrowUpRight size={18} />
-  Add Product
-</Link>
-         
+
+        <Link
+          to="/add-product"
+          className="primary-button"
+        >
+          <ArrowUpRight size={18} />
+          Add Product
+        </Link>
+
       </div>
 
+
+      {/* =================================================
+          STATISTICS
+      ================================================= */}
+
       <section className="stats-grid">
+
+        {/* TOTAL PRODUCTS */}
+
         <div className="stat-card">
+
           <div className="stat-icon blue">
             <Package size={21} />
           </div>
 
           <div>
-            <span>Total Products</span>
-            <strong>1,248</strong>
-            <small>+12.5% this month</small>
+
+            <span>
+              Total Products
+            </span>
+
+            <strong>
+              {totalProducts}
+            </strong>
+
+            <small>
+              Products in catalog
+            </small>
+
           </div>
+
         </div>
 
+
+        {/* VERIFIED PRODUCTS */}
+
         <div className="stat-card">
+
           <div className="stat-icon green">
             <CheckCircle2 size={21} />
           </div>
 
           <div>
-            <span>Verified Products</span>
-            <strong>1,086</strong>
-            <small>87% of catalog</small>
+
+            <span>
+              Verified Products
+            </span>
+
+            <strong>
+              {verifiedProducts}
+            </strong>
+
+            <small>
+              {verifiedPercentage}% of catalog
+            </small>
+
           </div>
+
         </div>
 
+
+        {/* NEEDS REVIEW */}
+
         <div className="stat-card">
+
           <div className="stat-icon orange">
             <AlertTriangle size={21} />
           </div>
 
           <div>
-            <span>Needs Review</span>
-            <strong>162</strong>
-            <small>13% of catalog</small>
+
+            <span>
+              Needs Review
+            </span>
+
+            <strong>
+              {reviewProducts}
+            </strong>
+
+            <small>
+              {reviewPercentage}% of catalog
+            </small>
+
           </div>
+
         </div>
 
+
+        {/* AVERAGE CONFIDENCE */}
+
         <div className="stat-card">
+
           <div className="stat-icon purple">
             <TrendingUp size={21} />
           </div>
 
           <div>
-            <span>Avg. Confidence</span>
-            <strong>91.4%</strong>
-            <small>+3.2% this month</small>
+
+            <span>
+              Avg. Confidence
+            </span>
+
+            <strong>
+              {averageConfidence}%
+            </strong>
+
+            <small>
+              Across product catalog
+            </small>
+
           </div>
+
         </div>
+
       </section>
+
+
+      {/* =================================================
+          RECENT PRODUCTS
+      ================================================= */}
 
       <section className="content-card">
+
         <div className="section-header">
+
           <div>
-            <h2>Recent Products</h2>
-            <p>Latest products processed by ForgeIntel.</p>
+
+            <h2>
+              Recent Products
+            </h2>
+
+            <p>
+              Latest products processed by ForgeIntel.
+            </p>
+
           </div>
 
-          <button className="text-button">View all</button>
+          <Link
+            to="/products"
+            className="text-button"
+          >
+            View all
+            <ChevronRight size={16} />
+          </Link>
+
         </div>
+
 
         <div className="product-table">
+
+          {/* TABLE HEADER */}
+
           <div className="table-header">
-            <span>Product</span>
-            <span>Category</span>
-            <span>Confidence</span>
-            <span>Status</span>
+
+            <span>
+              Product
+            </span>
+
+            <span>
+              Category
+            </span>
+
+            <span>
+              Confidence
+            </span>
+
+            <span>
+              Status
+            </span>
+
           </div>
 
-          {products.map((product) => (
-            <div className="table-row" key={product.sku}>
-              <div className="product-name">
-                <div className="product-avatar">
-                  {product.name.charAt(0)}
-                </div>
 
-                <div>
-                  <strong>{product.name}</strong>
-                  <span>{product.sku}</span>
-                </div>
-              </div>
+          {/* PRODUCTS */}
 
-              <span className="category">{product.category}</span>
+          {recentProducts.length > 0 ? (
 
-              <div className="confidence">
-                <div className="confidence-bar">
-                  <div
-                    style={{ width: `${product.confidence}%` }}
-                  ></div>
-                </div>
+            recentProducts.map((product) => (
 
-                <span>{product.confidence}%</span>
-              </div>
-
-              <span
-                className={`status ${
-                  product.status === "Verified"
-                    ? "verified"
-                    : "review"
-                }`}
+              <Link
+                to={`/products/${product.id}`}
+                className="table-row dashboard-product-row"
+                key={product.id}
               >
-                {product.status === "Verified" ? (
-                  <CheckCircle2 size={15} />
-                ) : (
-                  <AlertTriangle size={15} />
-                )}
 
-                {product.status}
+                {/* PRODUCT */}
+
+                <div className="product-name">
+
+                  <div className="product-avatar">
+                    {product.name?.charAt(0) || "P"}
+                  </div>
+
+                  <div>
+
+                    <strong>
+                      {product.name}
+                    </strong>
+
+                    <span>
+                      {product.sku || "No SKU"}
+                    </span>
+
+                  </div>
+
+                </div>
+
+
+                {/* CATEGORY */}
+
+                <span className="category">
+                  {product.category}
+                </span>
+
+
+                {/* CONFIDENCE */}
+
+                <div className="confidence">
+
+                  <div className="confidence-bar">
+
+                    <div
+                      style={{
+                        width: `${product.confidence || 0}%`,
+                      }}
+                    />
+
+                  </div>
+
+                  <span>
+                    {product.confidence || 0}%
+                  </span>
+
+                </div>
+
+
+                {/* STATUS */}
+
+                <span
+                  className={`status ${
+                    product.status === "Verified"
+                      ? "verified"
+                      : "review"
+                  }`}
+                >
+
+                  {product.status === "Verified" ? (
+                    <CheckCircle2 size={15} />
+                  ) : (
+                    <AlertTriangle size={15} />
+                  )}
+
+                  {product.status}
+
+                </span>
+
+              </Link>
+
+            ))
+
+          ) : (
+
+            <div className="empty-products">
+
+              <Package size={34} />
+
+              <strong>
+                No products available
+              </strong>
+
+              <span>
+                Add a product to start building
+                product intelligence.
               </span>
+
             </div>
-          ))}
+
+          )}
+
         </div>
+
       </section>
+
     </main>
   );
 }

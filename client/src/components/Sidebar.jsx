@@ -11,8 +11,12 @@ import { NavLink } from "react-router-dom";
 function Sidebar() {
   return (
     <aside className="sidebar">
+
+      {/* BRAND */}
       <div className="brand">
-        <div className="brand-icon">F</div>
+        <div className="brand-icon">
+          F
+        </div>
 
         <div>
           <h2>ForgeIntel</h2>
@@ -20,11 +24,17 @@ function Sidebar() {
         </div>
       </div>
 
+      {/* NAVIGATION */}
       <nav className="sidebar-nav">
-        <p className="nav-label">MAIN</p>
 
+        <p className="nav-label">
+          MAIN
+        </p>
+
+        {/* DASHBOARD */}
         <NavLink
           to="/"
+          end
           className={({ isActive }) =>
             `nav-item ${isActive ? "active" : ""}`
           }
@@ -33,8 +43,10 @@ function Sidebar() {
           <span>Dashboard</span>
         </NavLink>
 
+        {/* PRODUCTS */}
         <NavLink
           to="/products"
+          end
           className={({ isActive }) =>
             `nav-item ${isActive ? "active" : ""}`
           }
@@ -43,34 +55,62 @@ function Sidebar() {
           <span>Products</span>
         </NavLink>
 
-        <a className="nav-item" href="#">
+        {/* ADD PRODUCT */}
+        <NavLink
+          to="/add-product"
+          className={({ isActive }) =>
+            `nav-item ${isActive ? "active" : ""}`
+          }
+        >
           <PlusCircle size={19} />
           <span>Add Product</span>
-        </a>
+        </NavLink>
 
-        <a className="nav-item" href="#">
+        {/* REVIEWS */}
+        <NavLink
+          to="/reviews"
+          className={({ isActive }) =>
+            `nav-item ${isActive ? "active" : ""}`
+          }
+        >
           <ClipboardCheck size={19} />
           <span>Reviews</span>
-        </a>
+        </NavLink>
 
         <p className="nav-label settings-label">
           SYSTEM
         </p>
 
-        <a className="nav-item" href="#">
+        {/* SETTINGS */}
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            `nav-item ${isActive ? "active" : ""}`
+          }
+        >
           <Settings size={19} />
           <span>Settings</span>
-        </a>
+        </NavLink>
+
       </nav>
 
+      {/* FOOTER */}
       <div className="sidebar-footer">
+
         <div className="status-dot"></div>
 
         <div>
-          <strong>ForgeIntel Engine</strong>
-          <span>System operational</span>
+          <strong>
+            ForgeIntel Engine
+          </strong>
+
+          <span>
+            System operational
+          </span>
         </div>
+
       </div>
+
     </aside>
   );
 }

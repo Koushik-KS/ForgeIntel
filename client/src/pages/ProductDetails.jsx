@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 
 import {
@@ -7,6 +8,9 @@ import {
   FileText,
   ShieldCheck,
   Clock3,
+  Pencil,
+  X,
+  Save,
 } from "lucide-react";
 
 import { products } from "../data/products";
@@ -14,39 +18,237 @@ import { products } from "../data/products";
 function ProductDetails() {
   const { id } = useParams();
 
-  // Get the latest locally generated product
-  const generatedProduct = JSON.parse(
-    localStorage.getItem("forgeintel_generated_product") || "null"
-  );
+  // =====================================================
+  // GET PRODUCT
+  // =====================================================
 
-  // Get existing demo product
-  const staticProduct = products.find(
-    (item) => item.id === Number(id)
-  );
+  const getProduct = () => {
+    const generatedProduct = JSON.parse(
+      localStorage.getItem(
+        "forgeintel_generated_product"
+      ) || "null"
+    );
 
-  // Decide which product to display
-  const product =
-    generatedProduct?.id === id
-      ? generatedProduct
-      : staticProduct;
+    const staticProduct = products.find(
+      (item) => item.id === Number(id)
+    );
 
-  // Product not found
+    if (
+      generatedProduct?.id &&
+      String(generatedProduct.id) === String(id)
+    ) {
+      return generatedProduct;
+    }
+
+    return staticProduct;
+  };
+
+  const [product, setProduct] = useState(getProduct);
+
+  const [editingAttribute, setEditingAttribute] =
+    useState(null);
+
+  const [editValue, setEditValue] = useState("");
+
+  // =====================================================
+  // REFRESH PRODUCT
+  // =====================================================
+
+  useEffect(() => {
+    setProduct(getProduct());
+  }, [id]);
+
+  // =====================================================
+  // SAVE PRODUCT
+  // =====================================================
+
+  const saveProduct = (updatedProduct) => {
+    setProduct(updatedProduct);
+
+    if (
+      updatedProduct.id &&
+      String(updatedProduct.id) === String(id)
+    ) {
+      localStorage.setItem(
+        "forgeintel_generated_product",
+        JSON.stringify(updatedProduct)
+      );
+    }
+  };
+
+  // =====================================================
+  // BUILD UPDATED PRODUCT
+  // =====================================================
+
+  const buildUpdatedProduct = (updatedAttributes) => {
+    const reviewCount =
+      updatedAttributes.filter(
+        (attribute) =>
+          attribute.status === "Needs Review"
+      ).length;
+
+    const verifiedCount =
+      updatedAttributes.filter(
+        (attribute) =>
+          attribute.status === "Verified"
+      ).length;
+
+    return {
+      ...product,
+      attributes: updatedAttributes,
+      reviewCount,
+      verifiedCount,
+      status:
+        reviewCount > 0
+          ? "Needs Review"
+          : "Verified",
+      confidence:
+        calculateConfidence(updatedAttributes),
+    };
+  };
+
+  // =====================================================
+  // ACCEPT ATTRIBUTE
+  // =====================================================
+
+  const handleAccept = (attributeName) => {
+    const updatedAttributes =
+      product.attributes.map((attribute) => {
+        if (attribute.name !== attributeName) {
+          return attribute;
+        }
+
+        return {
+          ...attribute,
+          status: "Verified",
+          confidence: Math.max(
+            attribute.confidence,
+            90
+          ),
+          evidence:
+            "Attribute reviewed and accepted by human reviewer.",
+          source: "Human Review",
+          evidenceType: "Reviewed",
+        };
+      });
+
+    const updatedProduct =
+      buildUpdatedProduct(updatedAttributes);
+
+    saveProduct(updatedProduct);
+  };
+
+  // =====================================================
+  // REJECT ATTRIBUTE
+  // =====================================================
+
+  const handleReject = (attributeName) => {
+    const updatedAttributes =
+      product.attributes.map((attribute) => {
+        if (attribute.name !== attributeName) {
+          return attribute;
+        }
+
+        return {
+          ...attribute,
+          status: "Needs Review",
+          confidence: Math.min(
+            attribute.confidence,
+            60
+          ),
+          evidence:
+            "Attribute rejected during human review and requires correction.",
+          source: "Human Review",
+          evidenceType: "Rejected",
+        };
+      });
+
+    const updatedProduct =
+      buildUpdatedProduct(updatedAttributes);
+
+    saveProduct(updatedProduct);
+  };
+
+  // =====================================================
+  // START EDIT
+  // =====================================================
+
+  const handleEdit = (attribute) => {
+    setEditingAttribute(attribute.name);
+    setEditValue(attribute.value);
+  };
+
+  // =====================================================
+  // CANCEL EDIT
+  // =====================================================
+
+  const handleCancelEdit = () => {
+    setEditingAttribute(null);
+    setEditValue("");
+  };
+
+  // =====================================================
+  // SAVE EDIT
+  // =====================================================
+
+  const handleSaveEdit = (attributeName) => {
+    if (!editValue.trim()) {
+      return;
+    }
+
+    const updatedAttributes =
+      product.attributes.map((attribute) => {
+        if (attribute.name !== attributeName) {
+          return attribute;
+        }
+
+        return {
+          ...attribute,
+          value: editValue.trim(),
+          status: "Needs Review",
+          confidence: 85,
+          evidence:
+            "Attribute value manually edited and requires reviewer approval.",
+          source: "Human Review",
+          evidenceType: "Edited",
+        };
+      });
+
+    const updatedProduct =
+      buildUpdatedProduct(updatedAttributes);
+
+    saveProduct(updatedProduct);
+
+    setEditingAttribute(null);
+    setEditValue("");
+  };
+
+  // =====================================================
+  // PRODUCT NOT FOUND
+  // =====================================================
+
   if (!product) {
     return (
       <main className="dashboard">
 
         <div className="details-header">
+
           <div>
+
             <p className="eyebrow">
               PRODUCT INTELLIGENCE
             </p>
 
-            <h1>Product Not Found</h1>
+            <h1>
+              Product Not Found
+            </h1>
 
             <p className="page-description">
               The requested product could not be found.
             </p>
+
           </div>
+
         </div>
 
         <Link
@@ -61,20 +263,32 @@ function ProductDetails() {
     );
   }
 
-  const verifiedCount = product.attributes.filter(
-    (attribute) => attribute.status === "Verified"
-  ).length;
+  // =====================================================
+  // COUNTS
+  // =====================================================
 
-  const reviewCount = product.attributes.filter(
-    (attribute) => attribute.status === "Needs Review"
-  ).length;
+  const verifiedCount =
+    product.attributes.filter(
+      (attribute) =>
+        attribute.status === "Verified"
+    ).length;
+
+  const reviewCount =
+    product.attributes.filter(
+      (attribute) =>
+        attribute.status === "Needs Review"
+    ).length;
+
+  // =====================================================
+  // RENDER
+  // =====================================================
 
   return (
     <main className="dashboard">
 
-      {/* =====================================================
+      {/* =================================================
           HEADER
-      ===================================================== */}
+      ================================================= */}
 
       <div className="details-header">
 
@@ -122,9 +336,10 @@ function ProductDetails() {
 
       </div>
 
-      {/* =====================================================
+
+      {/* =================================================
           PRODUCT SUMMARY
-      ===================================================== */}
+      ================================================= */}
 
       <section className="product-summary-grid">
 
@@ -144,7 +359,7 @@ function ProductDetails() {
               style={{
                 width: `${product.confidence}%`,
               }}
-            ></div>
+            />
 
           </div>
 
@@ -155,6 +370,7 @@ function ProductDetails() {
           </p>
 
         </div>
+
 
         <div className="content-card summary-stat">
 
@@ -169,6 +385,7 @@ function ProductDetails() {
           </span>
 
         </div>
+
 
         <div className="content-card summary-stat review-stat">
 
@@ -186,9 +403,10 @@ function ProductDetails() {
 
       </section>
 
-      {/* =====================================================
+
+      {/* =================================================
           PRODUCT OVERVIEW
-      ===================================================== */}
+      ================================================= */}
 
       <section className="content-card description-card">
 
@@ -209,39 +427,60 @@ function ProductDetails() {
 
         </div>
 
+
         <div className="description-content">
 
           <div>
-            <span>PRODUCT</span>
+
+            <span>
+              PRODUCT
+            </span>
 
             <strong>
               {product.name}
             </strong>
+
           </div>
 
+
           <div>
-            <span>BRAND</span>
+
+            <span>
+              BRAND
+            </span>
 
             <strong>
               {product.brand}
             </strong>
+
           </div>
 
+
           <div>
-            <span>CATEGORY</span>
+
+            <span>
+              CATEGORY
+            </span>
 
             <strong>
               {product.category}
             </strong>
+
           </div>
 
+
           <div>
-            <span>SKU / PART NUMBER</span>
+
+            <span>
+              SKU / PART NUMBER
+            </span>
 
             <strong>
               {product.sku}
             </strong>
+
           </div>
+
 
           <div className="description-full">
 
@@ -259,9 +498,10 @@ function ProductDetails() {
 
       </section>
 
-      {/* =====================================================
+
+      {/* =================================================
           EXTRACTED PRODUCT INTELLIGENCE
-      ===================================================== */}
+      ================================================= */}
 
       <section className="content-card intelligence-card">
 
@@ -286,98 +526,218 @@ function ProductDetails() {
 
         </div>
 
+
         <div className="attributes-list">
 
-          {product.attributes.map((attribute) => (
-
-            <div
-              className="attribute-row"
-              key={attribute.name}
-            >
-
-              {/* ATTRIBUTE */}
-
-              <div className="attribute-info">
-
-                <span className="attribute-name">
-                  {attribute.name}
-                </span>
-
-                <strong>
-                  {attribute.value}
-                </strong>
-
-                <div className="evidence">
-
-                  <FileText size={14} />
-
-                  <span>
-                    {attribute.evidence}
-                  </span>
-
-                </div>
-
-                <div className="source">
-  Source: {attribute.source}
-</div>
-
-<div className="evidence-type">
-  Evidence Type: {attribute.evidenceType}
-</div>
-
-              </div>
-
-              {/* CONFIDENCE */}
-
-              <div className="attribute-confidence">
-
-                <div className="attribute-bar">
-
-                  <div
-                    style={{
-                      width: `${attribute.confidence}%`,
-                    }}
-                  ></div>
-
-                </div>
-
-                <strong>
-                  {attribute.confidence}%
-                </strong>
-
-              </div>
-
-              {/* STATUS */}
+          {product.attributes.map(
+            (attribute) => (
 
               <div
-                className={`status ${
-                  attribute.status === "Verified"
-                    ? "verified"
-                    : "review"
-                }`}
+                className="attribute-row"
+                key={attribute.name}
               >
 
-                {attribute.status === "Verified" ? (
-                  <CheckCircle2 size={15} />
-                ) : (
-                  <AlertTriangle size={15} />
+                {/* ATTRIBUTE */}
+
+                <div className="attribute-info">
+
+                  <span className="attribute-name">
+                    {attribute.name}
+                  </span>
+
+
+                  {editingAttribute ===
+                  attribute.name ? (
+
+                    <div className="attribute-editor">
+
+                      <input
+                        type="text"
+                        value={editValue}
+                        onChange={(event) =>
+                          setEditValue(
+                            event.target.value
+                          )
+                        }
+                        autoFocus
+                      />
+
+                      <div className="attribute-editor-actions">
+
+                        <button
+                          type="button"
+                          className="editor-save"
+                          onClick={() =>
+                            handleSaveEdit(
+                              attribute.name
+                            )
+                          }
+                        >
+                          <Save size={15} />
+                          Save
+                        </button>
+
+                        <button
+                          type="button"
+                          className="editor-cancel"
+                          onClick={
+                            handleCancelEdit
+                          }
+                        >
+                          <X size={15} />
+                          Cancel
+                        </button>
+
+                      </div>
+
+                    </div>
+
+                  ) : (
+
+                    <strong>
+                      {attribute.value}
+                    </strong>
+
+                  )}
+
+
+                  <div className="evidence">
+
+                    <FileText size={14} />
+
+                    <span>
+                      {attribute.evidence}
+                    </span>
+
+                  </div>
+
+
+                  <div className="source">
+                    Source: {attribute.source}
+                  </div>
+
+
+                  <div className="evidence-type">
+                    Evidence Type:{" "}
+                    {attribute.evidenceType}
+                  </div>
+
+
+                  {attribute.page && (
+                    <div className="source">
+                      Document Page:{" "}
+                      {attribute.page}
+                    </div>
+                  )}
+
+                </div>
+
+
+                {/* CONFIDENCE */}
+
+                <div className="attribute-confidence">
+
+                  <div className="attribute-bar">
+
+                    <div
+                      style={{
+                        width: `${attribute.confidence}%`,
+                      }}
+                    />
+
+                  </div>
+
+                  <strong>
+                    {attribute.confidence}%
+                  </strong>
+
+                </div>
+
+
+                {/* STATUS */}
+
+                <div
+                  className={`status ${
+                    attribute.status === "Verified"
+                      ? "verified"
+                      : "review"
+                  }`}
+                >
+
+                  {attribute.status ===
+                  "Verified" ? (
+                    <CheckCircle2 size={15} />
+                  ) : (
+                    <AlertTriangle size={15} />
+                  )}
+
+                  {attribute.status}
+
+                </div>
+
+
+                {/* REVIEW ACTIONS */}
+
+                {attribute.status ===
+                  "Needs Review" && (
+
+                  <div className="attribute-review-actions">
+
+                    <button
+                      type="button"
+                      className="review-accept"
+                      onClick={() =>
+                        handleAccept(
+                          attribute.name
+                        )
+                      }
+                    >
+                      <CheckCircle2 size={15} />
+                      Accept
+                    </button>
+
+
+                    <button
+                      type="button"
+                      className="review-edit"
+                      onClick={() =>
+                        handleEdit(attribute)
+                      }
+                    >
+                      <Pencil size={15} />
+                      Edit
+                    </button>
+
+
+                    <button
+                      type="button"
+                      className="review-reject"
+                      onClick={() =>
+                        handleReject(
+                          attribute.name
+                        )
+                      }
+                    >
+                      <AlertTriangle size={15} />
+                      Reject
+                    </button>
+
+                  </div>
+
                 )}
 
-                {attribute.status}
-
               </div>
-
-            </div>
-
-          ))}
+            )
+          )}
 
         </div>
 
       </section>
 
-      {/* =====================================================
+
+      {/* =================================================
           EVIDENCE & TRACEABILITY
-      ===================================================== */}
+      ================================================= */}
 
       <section className="content-card evidence-card">
 
@@ -397,6 +757,7 @@ function ProductDetails() {
           </div>
 
         </div>
+
 
         <div className="evidence-highlight">
 
@@ -420,9 +781,10 @@ function ProductDetails() {
 
       </section>
 
-      {/* =====================================================
+
+      {/* =================================================
           HUMAN REVIEW
-      ===================================================== */}
+      ================================================= */}
 
       {reviewCount > 0 && (
 
@@ -437,8 +799,11 @@ function ProductDetails() {
               </h2>
 
               <p>
-                Some attributes have lower confidence
-                and should be reviewed before publishing.
+                {reviewCount} attribute
+                {reviewCount !== 1
+                  ? "s"
+                  : ""}{" "}
+                still require review.
               </p>
 
             </div>
@@ -453,38 +818,39 @@ function ProductDetails() {
 
           </div>
 
-          <div className="review-actions">
 
-            <button
-              type="button"
-              className="review-accept"
-            >
-              <CheckCircle2 size={17} />
-              Accept
-            </button>
-
-            <button
-              type="button"
-              className="review-edit"
-            >
-              Edit Attribute
-            </button>
-
-            <button
-              type="button"
-              className="review-reject"
-            >
-              <AlertTriangle size={17} />
-              Reject
-            </button>
-
-          </div>
+          <p className="page-description">
+            Review the attributes marked as needing
+            review and take the appropriate action
+            before publishing.
+          </p>
 
         </section>
 
       )}
 
     </main>
+  );
+}
+
+
+// =====================================================
+// CONFIDENCE CALCULATION
+// =====================================================
+
+function calculateConfidence(attributes) {
+  if (!attributes.length) {
+    return 0;
+  }
+
+  const total = attributes.reduce(
+    (sum, attribute) =>
+      sum + attribute.confidence,
+    0
+  );
+
+  return Math.round(
+    total / attributes.length
   );
 }
 

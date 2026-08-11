@@ -3,25 +3,60 @@
 // =========================================================
 
 export function generateProductIntelligence(input) {
-  const productName = input.name?.trim() || "Unknown Product";
+  const productName =
+    input.name?.trim() || "Unknown Product";
 
-  const brand = input.brand?.trim() || "Unspecified";
+  const brand =
+    input.brand?.trim() || "Unspecified";
 
-  const sku = input.sku?.trim() || "Not provided";
+  const sku =
+    input.sku?.trim() || "Not provided";
+
+  const pdfData =
+    input.pdfData || null;
+
+  // =======================================================
+  // PDF DATA
+  // =======================================================
+
+  const pdfAttributes = pdfData?.fullText
+    ? extractPdfAttributes(pdfData)
+    : [];
+
+  // =======================================================
+  // BASIC PRODUCT INFORMATION
+  // =======================================================
+
+  const pdfProductType =
+    findAttribute(
+      pdfAttributes,
+      "PDF Product Type"
+    );
+
+  const pdfModel =
+    findAttribute(
+      pdfAttributes,
+      "PDF Model / Part Number"
+    );
 
   const category =
-    input.category?.trim() || inferCategory(productName);
-
-  const pdfData = input.pdfData || null;
+    input.category?.trim() ||
+    inferCategory(
+      productName,
+      pdfProductType?.value
+    );
 
   const description =
     input.description?.trim() ||
-    generateDescription(productName, category);
+    generateDescription(
+      productName,
+      category
+    );
 
   const attributes = [];
 
   // =======================================================
-  // 1. SUBMITTED INFORMATION
+  // BRAND
   // =======================================================
 
   if (input.brand) {
@@ -71,17 +106,23 @@ export function generateProductIntelligence(input) {
       createAttribute(
         "Category",
         category,
-        76,
+        84,
         "Needs Review",
-        "Category inferred from the product name using the local classification engine.",
-        "Local Classification Engine",
-        "Inferred"
+        pdfProductType
+          ? "Category inferred from product information and the technical document."
+          : "Category inferred from the product name using the local classification engine.",
+        pdfProductType
+          ? "Technical Document + Classification Engine"
+          : "Local Classification Engine",
+        pdfProductType
+          ? "Inferred"
+          : "Inferred"
       )
     );
   }
 
   // =======================================================
-  // SKU
+  // SKU / PART NUMBER
   // =======================================================
 
   if (input.sku) {
@@ -96,6 +137,19 @@ export function generateProductIntelligence(input) {
         "Submitted"
       )
     );
+  } else if (pdfModel) {
+    attributes.push(
+      createAttribute(
+        "SKU / Part Number",
+        pdfModel.value,
+        98,
+        "Verified",
+        `Part number extracted directly from the technical document on page ${pdfModel.page}.`,
+        "Technical Document",
+        "Extracted",
+        pdfModel.page
+      )
+    );
   } else {
     attributes.push(
       createAttribute(
@@ -103,7 +157,7 @@ export function generateProductIntelligence(input) {
         "Not provided",
         45,
         "Needs Review",
-        "No SKU or part number was supplied.",
+        "No SKU or part number was supplied or extracted.",
         "Missing Source Data",
         "Missing"
       )
@@ -114,19 +168,24 @@ export function generateProductIntelligence(input) {
   // PRODUCT TYPE
   // =======================================================
 
-  const productType = inferProductType(productName);
+  if (pdfProductType) {
+    attributes.push(pdfProductType);
+  } else {
+    const productType =
+      inferProductType(productName);
 
-  attributes.push(
-    createAttribute(
-      "Product Type",
-      productType,
-      91,
-      "Verified",
-      "Product type identified from the submitted product name.",
-      "Local Product Classification Engine",
-      "Inferred"
-    )
-  );
+    attributes.push(
+      createAttribute(
+        "Product Type",
+        productType,
+        91,
+        "Verified",
+        "Product type identified from the submitted product name.",
+        "Local Product Classification Engine",
+        "Inferred"
+      )
+    );
+  }
 
   // =======================================================
   // DESCRIPTION
@@ -137,14 +196,18 @@ export function generateProductIntelligence(input) {
       "Description",
       description,
       input.description ? 92 : 68,
-      input.description ? "Verified" : "Needs Review",
+      input.description
+        ? "Verified"
+        : "Needs Review",
       input.description
         ? "Description supplied by the product submitter."
         : "Description generated from available product information.",
       input.description
         ? "Submitted Product Information"
         : "Local Enrichment Engine",
-      input.description ? "Submitted" : "Enriched"
+      input.description
+        ? "Submitted"
+        : "Enriched"
     )
   );
 
@@ -152,23 +215,48 @@ export function generateProductIntelligence(input) {
   // PDF DOCUMENT INTELLIGENCE
   // =======================================================
 
-  if (pdfData?.fullText) {
-    const pdfAttributes = extractPdfAttributes(pdfData);
+  const pdfNames = new Set(
+    pdfAttributes.map(
+      (attribute) => attribute.name
+    )
+  );
 
-    attributes.push(...pdfAttributes);
-  }
+  pdfAttributes.forEach((attribute) => {
+    if (
+      attribute.name !==
+      "PDF Product Type" &&
+      attribute.name !==
+      "PDF Model / Part Number"
+    ) {
+      attributes.push(attribute);
+    }
+  });
 
   // =======================================================
-  // INDUSTRIAL ATTRIBUTE ENRICHMENT
+  // INDUSTRIAL ENRICHMENT
   // =======================================================
 
   const enrichedAttributes =
     generateIndustrialAttributes(
       productName,
-      category
+      category,
+      pdfAttributes
     );
 
-  attributes.push(...enrichedAttributes);
+  // Avoid duplicate inferred attributes when
+  // the PDF already supplied the same information.
+
+  enrichedAttributes.forEach((attribute) => {
+    const pdfEquivalent =
+      getPdfEquivalent(attribute.name);
+
+    if (
+      !pdfEquivalent ||
+      !pdfNames.has(pdfEquivalent)
+    ) {
+      attributes.push(attribute);
+    }
+  });
 
   // =======================================================
   // WEBSITE
@@ -252,6 +340,10 @@ export function generateProductIntelligence(input) {
         attribute.status === "Needs Review"
     ).length;
 
+  // =======================================================
+  // FINAL PRODUCT
+  // =======================================================
+
   return {
     id: `generated-${Date.now()}`,
 
@@ -265,30 +357,38 @@ export function generateProductIntelligence(input) {
 
     description,
 
-    website: input.website || "",
+    website:
+      input.website || "",
 
-    imageName: input.imageName || null,
+    imageName:
+      input.imageName || null,
 
-    documentName: input.documentName || null,
+    documentName:
+      input.documentName || null,
 
-    confidence: overallConfidence,
+    confidence:
+      overallConfidence,
 
     status:
       reviewCount > 0
         ? "Needs Review"
         : "Verified",
 
-    attributes: validatedAttributes,
+    attributes:
+      validatedAttributes,
 
     verifiedCount,
 
     reviewCount,
 
-    generatedAt: new Date().toISOString(),
+    generatedAt:
+      new Date().toISOString(),
 
     documentEvidence: pdfData
       ? {
-          pageCount: pdfData.pageCount,
+          pageCount:
+            pdfData.pageCount || 0,
+
           extracted: true,
         }
       : {
@@ -336,35 +436,97 @@ function createAttribute(
 
 
 // =========================================================
+// FIND ATTRIBUTE
+// =========================================================
+
+function findAttribute(
+  attributes,
+  name
+) {
+  return attributes.find(
+    (attribute) =>
+      attribute.name === name
+  );
+}
+
+
+// =========================================================
 // PDF ATTRIBUTE EXTRACTION
 // =========================================================
 
 function extractPdfAttributes(pdfData) {
   const attributes = [];
 
-  const pages = pdfData.pages || [];
+  const pages =
+    pdfData.pages || [];
 
   // -------------------------------------------------------
-  // SEARCH HELPER
+  // FIELD EXTRACTION
   // -------------------------------------------------------
 
   const findPdfValue = (labels) => {
     for (const page of pages) {
-      const text = (page.text || "")
-        .replace(/\s+/g, " ")
-        .trim();
+      const text =
+        (page.text || "")
+          .replace(/\s+/g, " ")
+          .trim();
 
       for (const label of labels) {
-        const regex = new RegExp(
-          `${label}\\s*[:\\-]?\\s*(.*?)\\s+(?=(Product Type|Model|Model / Part Number|Part Number|Application|Actuation|Port Size|Typical Operating Pressure|Operating Pressure|Working Medium|Medium|Body Material|Material|Operating Temperature|Connection|Mounting)\\s*[:\\-]?)`,
-          "i"
-        );
+        const escapedLabel =
+          escapeRegex(label);
 
-        const match = text.match(regex);
+        // Find the label first.
+        const labelRegex =
+          new RegExp(
+            `${escapedLabel}\\s*[:\\-]?\\s*`,
+            "i"
+          );
 
-        if (match?.[1]) {
+        const labelMatch =
+          text.match(labelRegex);
+
+        if (!labelMatch) {
+          continue;
+        }
+
+        const start =
+          labelMatch.index +
+          labelMatch[0].length;
+
+        const remaining =
+          text.slice(start);
+
+        // Known labels that mark the
+        // beginning of the next field.
+        const nextFieldRegex =
+          /\s+(?=(?:Product Type|Model\s*\/?\s*Part Number|Model|Part Number|Application|Actuation|Port Size|Typical Operating Pressure|Operating Pressure|Working Medium|Medium|Body Material|Material|Operating Temperature|Connection|Mounting|Fluid Type|Power Source)\s*[:\-]?)/i;
+
+        const nextMatch =
+          remaining.match(
+            nextFieldRegex
+          );
+
+        let value;
+
+        if (nextMatch) {
+          value =
+            remaining
+              .slice(0, nextMatch.index)
+              .trim();
+        } else {
+          // Important:
+          // If the field is the last field
+          // on the page, take the remaining text.
+          value =
+            remaining.trim();
+        }
+
+        if (
+          value &&
+          value.length < 300
+        ) {
           return {
-            value: match[1].trim(),
+            value: cleanPdfValue(value),
             page: page.page,
           };
         }
@@ -374,13 +536,14 @@ function extractPdfAttributes(pdfData) {
     return null;
   };
 
-  // -------------------------------------------------------
+  // =======================================================
   // PRODUCT TYPE
-  // -------------------------------------------------------
+  // =======================================================
 
-  const productType = findPdfValue([
-    "Product Type",
-  ]);
+  const productType =
+    findPdfValue([
+      "Product Type",
+    ]);
 
   if (productType) {
     attributes.push(
@@ -389,7 +552,7 @@ function extractPdfAttributes(pdfData) {
         productType.value,
         98,
         "Verified",
-        `Product type extracted from the technical document on page ${productType.page}.`,
+        `Product type extracted directly from the technical document on page ${productType.page}.`,
         "Technical Document",
         "Extracted",
         productType.page
@@ -397,15 +560,16 @@ function extractPdfAttributes(pdfData) {
     );
   }
 
-  // -------------------------------------------------------
+  // =======================================================
   // MODEL / PART NUMBER
-  // -------------------------------------------------------
+  // =======================================================
 
-  const model = findPdfValue([
-    "Model / Part Number",
-    "Model",
-    "Part Number",
-  ]);
+  const model =
+    findPdfValue([
+      "Model / Part Number",
+      "Model",
+      "Part Number",
+    ]);
 
   if (model) {
     attributes.push(
@@ -414,7 +578,7 @@ function extractPdfAttributes(pdfData) {
         model.value,
         98,
         "Verified",
-        `Model or part number extracted from the technical document on page ${model.page}.`,
+        `Model or part number extracted directly from the technical document on page ${model.page}.`,
         "Technical Document",
         "Extracted",
         model.page
@@ -422,13 +586,14 @@ function extractPdfAttributes(pdfData) {
     );
   }
 
-  // -------------------------------------------------------
+  // =======================================================
   // APPLICATION
-  // -------------------------------------------------------
+  // =======================================================
 
-  const application = findPdfValue([
-    "Application",
-  ]);
+  const application =
+    findPdfValue([
+      "Application",
+    ]);
 
   if (application) {
     attributes.push(
@@ -445,13 +610,14 @@ function extractPdfAttributes(pdfData) {
     );
   }
 
-  // -------------------------------------------------------
+  // =======================================================
   // ACTUATION
-  // -------------------------------------------------------
+  // =======================================================
 
-  const actuation = findPdfValue([
-    "Actuation",
-  ]);
+  const actuation =
+    findPdfValue([
+      "Actuation",
+    ]);
 
   if (actuation) {
     attributes.push(
@@ -460,7 +626,7 @@ function extractPdfAttributes(pdfData) {
         actuation.value,
         97,
         "Verified",
-        `Actuation method extracted from the technical document on page ${actuation.page}.`,
+        `Actuation method extracted directly from the technical document on page ${actuation.page}.`,
         "Technical Document",
         "Extracted",
         actuation.page
@@ -468,13 +634,14 @@ function extractPdfAttributes(pdfData) {
     );
   }
 
-  // -------------------------------------------------------
+  // =======================================================
   // PORT SIZE
-  // -------------------------------------------------------
+  // =======================================================
 
-  const portSize = findPdfValue([
-    "Port Size",
-  ]);
+  const portSize =
+    findPdfValue([
+      "Port Size",
+    ]);
 
   if (portSize) {
     attributes.push(
@@ -491,14 +658,15 @@ function extractPdfAttributes(pdfData) {
     );
   }
 
-  // -------------------------------------------------------
+  // =======================================================
   // OPERATING PRESSURE
-  // -------------------------------------------------------
+  // =======================================================
 
-  const pressure = findPdfValue([
-    "Typical Operating Pressure",
-    "Operating Pressure",
-  ]);
+  const pressure =
+    findPdfValue([
+      "Typical Operating Pressure",
+      "Operating Pressure",
+    ]);
 
   if (pressure) {
     attributes.push(
@@ -515,14 +683,15 @@ function extractPdfAttributes(pdfData) {
     );
   }
 
-  // -------------------------------------------------------
+  // =======================================================
   // WORKING MEDIUM
-  // -------------------------------------------------------
+  // =======================================================
 
-  const medium = findPdfValue([
-    "Working Medium",
-    "Medium",
-  ]);
+  const medium =
+    findPdfValue([
+      "Working Medium",
+      "Medium",
+    ]);
 
   if (medium) {
     attributes.push(
@@ -531,7 +700,7 @@ function extractPdfAttributes(pdfData) {
         medium.value,
         96,
         "Verified",
-        `Working medium extracted from the technical document on page ${medium.page}.`,
+        `Working medium extracted directly from the technical document on page ${medium.page}.`,
         "Technical Document",
         "Extracted",
         medium.page
@@ -539,14 +708,15 @@ function extractPdfAttributes(pdfData) {
     );
   }
 
-  // -------------------------------------------------------
+  // =======================================================
   // BODY MATERIAL
-  // -------------------------------------------------------
+  // =======================================================
 
-  const material = findPdfValue([
-    "Body Material",
-    "Material",
-  ]);
+  const material =
+    findPdfValue([
+      "Body Material",
+      "Material",
+    ]);
 
   if (material) {
     attributes.push(
@@ -555,7 +725,7 @@ function extractPdfAttributes(pdfData) {
         material.value,
         96,
         "Verified",
-        `Body material extracted from the technical document on page ${material.page}.`,
+        `Body material extracted directly from the technical document on page ${material.page}.`,
         "Technical Document",
         "Extracted",
         material.page
@@ -563,13 +733,14 @@ function extractPdfAttributes(pdfData) {
     );
   }
 
-  // -------------------------------------------------------
+  // =======================================================
   // OPERATING TEMPERATURE
-  // -------------------------------------------------------
+  // =======================================================
 
-  const temperature = findPdfValue([
-    "Operating Temperature",
-  ]);
+  const temperature =
+    findPdfValue([
+      "Operating Temperature",
+    ]);
 
   if (temperature) {
     attributes.push(
@@ -578,7 +749,7 @@ function extractPdfAttributes(pdfData) {
         temperature.value,
         96,
         "Verified",
-        `Operating temperature extracted from the technical document on page ${temperature.page}.`,
+        `Operating temperature extracted directly from the technical document on page ${temperature.page}.`,
         "Technical Document",
         "Extracted",
         temperature.page
@@ -586,13 +757,14 @@ function extractPdfAttributes(pdfData) {
     );
   }
 
-  // -------------------------------------------------------
+  // =======================================================
   // CONNECTION
-  // -------------------------------------------------------
+  // =======================================================
 
-  const connection = findPdfValue([
-    "Connection",
-  ]);
+  const connection =
+    findPdfValue([
+      "Connection",
+    ]);
 
   if (connection) {
     attributes.push(
@@ -601,7 +773,7 @@ function extractPdfAttributes(pdfData) {
         connection.value,
         95,
         "Verified",
-        `Connection type extracted from the technical document on page ${connection.page}.`,
+        `Connection type extracted directly from the technical document on page ${connection.page}.`,
         "Technical Document",
         "Extracted",
         connection.page
@@ -609,13 +781,14 @@ function extractPdfAttributes(pdfData) {
     );
   }
 
-  // -------------------------------------------------------
+  // =======================================================
   // MOUNTING
-  // -------------------------------------------------------
+  // =======================================================
 
-  const mounting = findPdfValue([
-    "Mounting",
-  ]);
+  const mounting =
+    findPdfValue([
+      "Mounting",
+    ]);
 
   if (mounting) {
     attributes.push(
@@ -624,7 +797,7 @@ function extractPdfAttributes(pdfData) {
         mounting.value,
         95,
         "Verified",
-        `Mounting information extracted from the technical document on page ${mounting.page}.`,
+        `Mounting information extracted directly from the technical document on page ${mounting.page}.`,
         "Technical Document",
         "Extracted",
         mounting.page
@@ -637,11 +810,60 @@ function extractPdfAttributes(pdfData) {
 
 
 // =========================================================
+// CLEAN PDF VALUE
+// =========================================================
+
+function cleanPdfValue(value) {
+  return value
+    .replace(/\s+/g, " ")
+    .replace(/^[\s:;\-,]+/, "")
+    .replace(/[\s;]+$/, "")
+    .trim();
+}
+
+
+// =========================================================
+// ESCAPE REGEX
+// =========================================================
+
+function escapeRegex(value) {
+  return value.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
+  );
+}
+
+
+// =========================================================
+// PDF EQUIVALENT
+// =========================================================
+
+function getPdfEquivalent(name) {
+  const map = {
+    Application: "PDF Application",
+    Actuation: "PDF Actuation",
+    "Typical Port Size": "PDF Port Size",
+    "Typical Operating Pressure":
+      "PDF Operating Pressure",
+    "Fluid Type": "PDF Working Medium",
+    "Component Type": "PDF Product Type",
+  };
+
+  return map[name] || null;
+}
+
+
+// =========================================================
 // CATEGORY INFERENCE
 // =========================================================
 
-function inferCategory(productName) {
-  const name = productName.toLowerCase();
+function inferCategory(
+  productName,
+  pdfProductType = ""
+) {
+  const name =
+    `${productName} ${pdfProductType}`
+      .toLowerCase();
 
   if (
     name.includes("pump") ||
@@ -650,7 +872,9 @@ function inferCategory(productName) {
     return "Hydraulic Equipment";
   }
 
-  if (name.includes("bearing")) {
+  if (
+    name.includes("bearing")
+  ) {
     return "Bearings";
   }
 
@@ -675,7 +899,9 @@ function inferCategory(productName) {
     return "Gearboxes";
   }
 
-  if (name.includes("conveyor")) {
+  if (
+    name.includes("conveyor")
+  ) {
     return "Material Handling";
   }
 
@@ -688,37 +914,54 @@ function inferCategory(productName) {
 // =========================================================
 
 function inferProductType(productName) {
-  const name = productName.toLowerCase();
+  const name =
+    productName.toLowerCase();
 
-  if (name.includes("hydraulic pump")) {
+  if (
+    name.includes("hydraulic pump")
+  ) {
     return "Industrial Hydraulic Pump";
   }
 
-  if (name.includes("pneumatic valve")) {
+  if (
+    name.includes("pneumatic valve")
+  ) {
     return "Pneumatic Control Valve";
   }
 
-  if (name.includes("valve")) {
+  if (
+    name.includes("valve")
+  ) {
     return "Industrial Control Valve";
   }
 
-  if (name.includes("bearing")) {
+  if (
+    name.includes("bearing")
+  ) {
     return "Industrial Bearing";
   }
 
-  if (name.includes("electric motor")) {
+  if (
+    name.includes("electric motor")
+  ) {
     return "Industrial Electric Motor";
   }
 
-  if (name.includes("motor")) {
+  if (
+    name.includes("motor")
+  ) {
     return "Industrial Motor";
   }
 
-  if (name.includes("gearbox")) {
+  if (
+    name.includes("gearbox")
+  ) {
     return "Industrial Gearbox";
   }
 
-  if (name.includes("conveyor")) {
+  if (
+    name.includes("conveyor")
+  ) {
     return "Industrial Conveyor Component";
   }
 
@@ -727,7 +970,7 @@ function inferProductType(productName) {
 
 
 // =========================================================
-// DESCRIPTION ENRICHMENT
+// DESCRIPTION
 // =========================================================
 
 function generateDescription(
@@ -744,15 +987,17 @@ function generateDescription(
 
 function generateIndustrialAttributes(
   productName,
-  category
+  category,
+  pdfAttributes = []
 ) {
-  const name = productName.toLowerCase();
+  const name =
+    productName.toLowerCase();
 
   const attributes = [];
 
-  // -------------------------------------------------------
+  // =======================================================
   // PNEUMATIC VALVE
-  // -------------------------------------------------------
+  // =======================================================
 
   if (
     name.includes("pneumatic") &&
@@ -807,9 +1052,9 @@ function generateIndustrialAttributes(
     );
   }
 
-  // -------------------------------------------------------
+  // =======================================================
   // HYDRAULIC PUMP
-  // -------------------------------------------------------
+  // =======================================================
 
   if (
     name.includes("hydraulic") &&
@@ -852,11 +1097,13 @@ function generateIndustrialAttributes(
     );
   }
 
-  // -------------------------------------------------------
+  // =======================================================
   // BEARING
-  // -------------------------------------------------------
+  // =======================================================
 
-  if (name.includes("bearing")) {
+  if (
+    name.includes("bearing")
+  ) {
     attributes.push(
       createAttribute(
         "Application",
@@ -882,9 +1129,9 @@ function generateIndustrialAttributes(
     );
   }
 
-  // -------------------------------------------------------
+  // =======================================================
   // ELECTRIC MOTOR
-  // -------------------------------------------------------
+  // =======================================================
 
   if (
     name.includes("electric motor") ||
@@ -915,11 +1162,13 @@ function generateIndustrialAttributes(
     );
   }
 
-  // -------------------------------------------------------
+  // =======================================================
   // GEARBOX
-  // -------------------------------------------------------
+  // =======================================================
 
-  if (name.includes("gearbox")) {
+  if (
+    name.includes("gearbox")
+  ) {
     attributes.push(
       createAttribute(
         "Application",
@@ -945,9 +1194,9 @@ function generateIndustrialAttributes(
     );
   }
 
-  // -------------------------------------------------------
-  // GENERIC INDUSTRIAL PRODUCT
-  // -------------------------------------------------------
+  // =======================================================
+  // GENERIC PRODUCT
+  // =======================================================
 
   if (
     attributes.length === 0 &&
@@ -976,14 +1225,18 @@ function generateIndustrialAttributes(
 
 function validateAttributes(attributes) {
   return attributes.map((attribute) => {
-    let confidence = attribute.confidence;
+    let confidence =
+      attribute.confidence;
 
-    let status = attribute.status;
+    let status =
+      attribute.status;
 
+    // Very low confidence
     if (confidence < 70) {
       status = "Needs Review";
     }
 
+    // Enriched values
     if (
       attribute.evidenceType === "Enriched" &&
       confidence < 80
@@ -991,12 +1244,14 @@ function validateAttributes(attributes) {
       status = "Needs Review";
     }
 
+    // Missing values
     if (
       attribute.evidenceType === "Missing"
     ) {
       status = "Needs Review";
     }
 
+    // Submitted information
     if (
       attribute.evidenceType === "Submitted" &&
       confidence >= 90
@@ -1004,6 +1259,7 @@ function validateAttributes(attributes) {
       status = "Verified";
     }
 
+    // Extracted PDF information
     if (
       attribute.evidenceType === "Extracted" &&
       confidence >= 90
@@ -1024,16 +1280,19 @@ function validateAttributes(attributes) {
 // OVERALL CONFIDENCE
 // =========================================================
 
-function calculateOverallConfidence(attributes) {
+function calculateOverallConfidence(
+  attributes
+) {
   if (!attributes.length) {
     return 0;
   }
 
-  const total = attributes.reduce(
-    (sum, attribute) =>
-      sum + attribute.confidence,
-    0
-  );
+  const total =
+    attributes.reduce(
+      (sum, attribute) =>
+        sum + attribute.confidence,
+      0
+    );
 
   return Math.round(
     total / attributes.length
