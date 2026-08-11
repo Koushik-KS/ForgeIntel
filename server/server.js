@@ -2,11 +2,20 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 
+import { connectDatabase } from "./config/db.js";
+import productRoutes from "./routes/productRoutes.js";
+
 dotenv.config();
 
 const app = express();
 
 const PORT = process.env.PORT || 5000;
+
+// =====================================================
+// DATABASE
+// =====================================================
+
+await connectDatabase();
 
 // =====================================================
 // MIDDLEWARE
@@ -19,7 +28,11 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: "10mb" }));
+app.use(
+  express.json({
+    limit: "10mb",
+  })
+);
 
 // =====================================================
 // HEALTH CHECK
@@ -31,8 +44,18 @@ app.get("/api/health", (req, res) => {
     message: "ForgeIntel API is running",
     service: "ForgeIntel Intelligence Engine",
     status: "operational",
+    database: "configured",
   });
 });
+
+// =====================================================
+// PRODUCT ROUTES
+// =====================================================
+
+app.use(
+  "/api/products",
+  productRoutes
+);
 
 // =====================================================
 // 404
@@ -50,7 +73,7 @@ app.use((req, res) => {
 // =====================================================
 
 app.use((error, req, res, next) => {
-  console.error(error);
+  console.error("Server Error:", error);
 
   res.status(500).json({
     success: false,
@@ -68,6 +91,7 @@ ForgeIntel Server
 -------------------------
 API: http://localhost:${PORT}
 Health: http://localhost:${PORT}/api/health
+Products: http://localhost:${PORT}/api/products
 Status: Operational
 -------------------------
   `);
