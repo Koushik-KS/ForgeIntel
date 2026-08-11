@@ -11,6 +11,8 @@ import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
 import AddProduct from "./pages/AddProduct";
 import Processing from "./pages/Processing";
+import Reviews from "./pages/Reviews";
+import Settings from "./pages/Settings";
 
 function App() {
   return (
@@ -46,6 +48,16 @@ function App() {
 <Route
   path="/processing"
   element={<Processing />}
+/>
+
+<Route
+  path="/reviews"
+  element={<Reviews />}
+/>
+
+<Route
+  path="/settings"
+  element={<Settings />}
 />
 
           </Routes>
