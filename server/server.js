@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 
 import { connectDatabase } from "./config/db.js";
 import productRoutes from "./routes/productRoutes.js";
+import intelligenceRoutes from "./routes/intelligenceRoutes.js";
 
 dotenv.config();
 
@@ -58,6 +59,15 @@ app.use(
 );
 
 // =====================================================
+// INTELLIGENCE ROUTES
+// =====================================================
+
+app.use(
+  "/api/intelligence",
+  intelligenceRoutes
+);
+
+// =====================================================
 // 404
 // =====================================================
 
@@ -92,6 +102,7 @@ ForgeIntel Server
 API: http://localhost:${PORT}
 Health: http://localhost:${PORT}/api/health
 Products: http://localhost:${PORT}/api/products
+Intelligence: http://localhost:${PORT}/api/intelligence
 Status: Operational
 -------------------------
   `);

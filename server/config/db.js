@@ -2,17 +2,20 @@ import mongoose from "mongoose";
 
 export async function connectDatabase() {
   try {
-    if (!process.env.MONGO_URI) {
-      console.warn("MONGO_URI is not configured.");
-      return;
+    const mongoUri = process.env.MONGO_URI;
+
+    if (!mongoUri) {
+      throw new Error(
+        "MONGO_URI is not defined in server/.env"
+      );
     }
 
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(mongoUri);
 
-    console.log("ForgeIntel database connected");
+    console.log("MongoDB connected successfully");
   } catch (error) {
     console.error(
-      "Database connection failed:",
+      "MongoDB connection failed:",
       error.message
     );
 
