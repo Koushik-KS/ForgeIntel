@@ -12,6 +12,8 @@ export function generateProductIntelligence(input) {
   const category =
     input.category?.trim() || inferCategory(productName);
 
+  const pdfData = input.pdfData || null;
+
   const description =
     input.description?.trim() ||
     generateDescription(productName, category);
@@ -147,6 +149,16 @@ export function generateProductIntelligence(input) {
   );
 
   // =======================================================
+  // PDF DOCUMENT INTELLIGENCE
+  // =======================================================
+
+  if (pdfData?.fullText) {
+    const pdfAttributes = extractPdfAttributes(pdfData);
+
+    attributes.push(...pdfAttributes);
+  }
+
+  // =======================================================
   // INDUSTRIAL ATTRIBUTE ENRICHMENT
   // =======================================================
 
@@ -274,6 +286,16 @@ export function generateProductIntelligence(input) {
 
     generatedAt: new Date().toISOString(),
 
+    documentEvidence: pdfData
+      ? {
+          pageCount: pdfData.pageCount,
+          extracted: true,
+        }
+      : {
+          pageCount: 0,
+          extracted: false,
+        },
+
     pipeline: {
       extraction: "Complete",
       normalization: "Complete",
@@ -297,7 +319,8 @@ function createAttribute(
   status,
   evidence,
   source,
-  evidenceType
+  evidenceType,
+  page = null
 ) {
   return {
     name,
@@ -307,7 +330,309 @@ function createAttribute(
     evidence,
     source,
     evidenceType,
+    page,
   };
+}
+
+
+// =========================================================
+// PDF ATTRIBUTE EXTRACTION
+// =========================================================
+
+function extractPdfAttributes(pdfData) {
+  const attributes = [];
+
+  const pages = pdfData.pages || [];
+
+  // -------------------------------------------------------
+  // SEARCH HELPER
+  // -------------------------------------------------------
+
+  const findPdfValue = (labels) => {
+    for (const page of pages) {
+      const text = (page.text || "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      for (const label of labels) {
+        const regex = new RegExp(
+          `${label}\\s*[:\\-]?\\s*(.*?)\\s+(?=(Product Type|Model|Model / Part Number|Part Number|Application|Actuation|Port Size|Typical Operating Pressure|Operating Pressure|Working Medium|Medium|Body Material|Material|Operating Temperature|Connection|Mounting)\\s*[:\\-]?)`,
+          "i"
+        );
+
+        const match = text.match(regex);
+
+        if (match?.[1]) {
+          return {
+            value: match[1].trim(),
+            page: page.page,
+          };
+        }
+      }
+    }
+
+    return null;
+  };
+
+  // -------------------------------------------------------
+  // PRODUCT TYPE
+  // -------------------------------------------------------
+
+  const productType = findPdfValue([
+    "Product Type",
+  ]);
+
+  if (productType) {
+    attributes.push(
+      createAttribute(
+        "PDF Product Type",
+        productType.value,
+        98,
+        "Verified",
+        `Product type extracted from the technical document on page ${productType.page}.`,
+        "Technical Document",
+        "Extracted",
+        productType.page
+      )
+    );
+  }
+
+  // -------------------------------------------------------
+  // MODEL / PART NUMBER
+  // -------------------------------------------------------
+
+  const model = findPdfValue([
+    "Model / Part Number",
+    "Model",
+    "Part Number",
+  ]);
+
+  if (model) {
+    attributes.push(
+      createAttribute(
+        "PDF Model / Part Number",
+        model.value,
+        98,
+        "Verified",
+        `Model or part number extracted from the technical document on page ${model.page}.`,
+        "Technical Document",
+        "Extracted",
+        model.page
+      )
+    );
+  }
+
+  // -------------------------------------------------------
+  // APPLICATION
+  // -------------------------------------------------------
+
+  const application = findPdfValue([
+    "Application",
+  ]);
+
+  if (application) {
+    attributes.push(
+      createAttribute(
+        "PDF Application",
+        application.value,
+        97,
+        "Verified",
+        `Application extracted directly from the technical document on page ${application.page}.`,
+        "Technical Document",
+        "Extracted",
+        application.page
+      )
+    );
+  }
+
+  // -------------------------------------------------------
+  // ACTUATION
+  // -------------------------------------------------------
+
+  const actuation = findPdfValue([
+    "Actuation",
+  ]);
+
+  if (actuation) {
+    attributes.push(
+      createAttribute(
+        "PDF Actuation",
+        actuation.value,
+        97,
+        "Verified",
+        `Actuation method extracted from the technical document on page ${actuation.page}.`,
+        "Technical Document",
+        "Extracted",
+        actuation.page
+      )
+    );
+  }
+
+  // -------------------------------------------------------
+  // PORT SIZE
+  // -------------------------------------------------------
+
+  const portSize = findPdfValue([
+    "Port Size",
+  ]);
+
+  if (portSize) {
+    attributes.push(
+      createAttribute(
+        "PDF Port Size",
+        portSize.value,
+        97,
+        "Verified",
+        `Port size extracted directly from the technical document on page ${portSize.page}.`,
+        "Technical Document",
+        "Extracted",
+        portSize.page
+      )
+    );
+  }
+
+  // -------------------------------------------------------
+  // OPERATING PRESSURE
+  // -------------------------------------------------------
+
+  const pressure = findPdfValue([
+    "Typical Operating Pressure",
+    "Operating Pressure",
+  ]);
+
+  if (pressure) {
+    attributes.push(
+      createAttribute(
+        "PDF Operating Pressure",
+        pressure.value,
+        97,
+        "Verified",
+        `Operating pressure extracted directly from the technical document on page ${pressure.page}.`,
+        "Technical Document",
+        "Extracted",
+        pressure.page
+      )
+    );
+  }
+
+  // -------------------------------------------------------
+  // WORKING MEDIUM
+  // -------------------------------------------------------
+
+  const medium = findPdfValue([
+    "Working Medium",
+    "Medium",
+  ]);
+
+  if (medium) {
+    attributes.push(
+      createAttribute(
+        "PDF Working Medium",
+        medium.value,
+        96,
+        "Verified",
+        `Working medium extracted from the technical document on page ${medium.page}.`,
+        "Technical Document",
+        "Extracted",
+        medium.page
+      )
+    );
+  }
+
+  // -------------------------------------------------------
+  // BODY MATERIAL
+  // -------------------------------------------------------
+
+  const material = findPdfValue([
+    "Body Material",
+    "Material",
+  ]);
+
+  if (material) {
+    attributes.push(
+      createAttribute(
+        "PDF Body Material",
+        material.value,
+        96,
+        "Verified",
+        `Body material extracted from the technical document on page ${material.page}.`,
+        "Technical Document",
+        "Extracted",
+        material.page
+      )
+    );
+  }
+
+  // -------------------------------------------------------
+  // OPERATING TEMPERATURE
+  // -------------------------------------------------------
+
+  const temperature = findPdfValue([
+    "Operating Temperature",
+  ]);
+
+  if (temperature) {
+    attributes.push(
+      createAttribute(
+        "PDF Operating Temperature",
+        temperature.value,
+        96,
+        "Verified",
+        `Operating temperature extracted from the technical document on page ${temperature.page}.`,
+        "Technical Document",
+        "Extracted",
+        temperature.page
+      )
+    );
+  }
+
+  // -------------------------------------------------------
+  // CONNECTION
+  // -------------------------------------------------------
+
+  const connection = findPdfValue([
+    "Connection",
+  ]);
+
+  if (connection) {
+    attributes.push(
+      createAttribute(
+        "PDF Connection",
+        connection.value,
+        95,
+        "Verified",
+        `Connection type extracted from the technical document on page ${connection.page}.`,
+        "Technical Document",
+        "Extracted",
+        connection.page
+      )
+    );
+  }
+
+  // -------------------------------------------------------
+  // MOUNTING
+  // -------------------------------------------------------
+
+  const mounting = findPdfValue([
+    "Mounting",
+  ]);
+
+  if (mounting) {
+    attributes.push(
+      createAttribute(
+        "PDF Mounting",
+        mounting.value,
+        95,
+        "Verified",
+        `Mounting information extracted from the technical document on page ${mounting.page}.`,
+        "Technical Document",
+        "Extracted",
+        mounting.page
+      )
+    );
+  }
+
+  return attributes;
 }
 
 
@@ -325,9 +650,7 @@ function inferCategory(productName) {
     return "Hydraulic Equipment";
   }
 
-  if (
-    name.includes("bearing")
-  ) {
+  if (name.includes("bearing")) {
     return "Bearings";
   }
 
@@ -352,9 +675,7 @@ function inferCategory(productName) {
     return "Gearboxes";
   }
 
-  if (
-    name.includes("conveyor")
-  ) {
+  if (name.includes("conveyor")) {
     return "Material Handling";
   }
 
@@ -426,6 +747,7 @@ function generateIndustrialAttributes(
   category
 ) {
   const name = productName.toLowerCase();
+
   const attributes = [];
 
   // -------------------------------------------------------
@@ -655,14 +977,13 @@ function generateIndustrialAttributes(
 function validateAttributes(attributes) {
   return attributes.map((attribute) => {
     let confidence = attribute.confidence;
+
     let status = attribute.status;
 
-    // Very low confidence should always require review
     if (confidence < 70) {
       status = "Needs Review";
     }
 
-    // Enriched values below 80% should require review
     if (
       attribute.evidenceType === "Enriched" &&
       confidence < 80
@@ -670,16 +991,21 @@ function validateAttributes(attributes) {
       status = "Needs Review";
     }
 
-    // Missing values require review
     if (
       attribute.evidenceType === "Missing"
     ) {
       status = "Needs Review";
     }
 
-    // Values with strong submitted evidence
     if (
       attribute.evidenceType === "Submitted" &&
+      confidence >= 90
+    ) {
+      status = "Verified";
+    }
+
+    if (
+      attribute.evidenceType === "Extracted" &&
       confidence >= 90
     ) {
       status = "Verified";
