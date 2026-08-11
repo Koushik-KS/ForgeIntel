@@ -1,13 +1,16 @@
 import { useState } from "react";
+
 import {
   ArrowLeft,
-  Upload,
   FileText,
   Image,
   Sparkles,
   X,
 } from "lucide-react";
+
 import { Link, useNavigate } from "react-router-dom";
+
+import { extractPdfText } from "../services/pdfExtractor";
 
 function AddProduct() {
   const navigate = useNavigate();
@@ -57,24 +60,36 @@ function AddProduct() {
     setDocument(null);
   };
 
- const handleGenerate = (event) => {
-  event.preventDefault();
+  const handleGenerate = async (event) => {
+    event.preventDefault();
 
-  if (!formData.name.trim()) {
-    alert("Please enter a product name.");
-    return;
-  }
+    if (!formData.name.trim()) {
+      alert("Please enter a product name.");
+      return;
+    }
 
-  navigate("/processing", {
-    state: {
-      product: {
-        ...formData,
-        imageName: image?.name || null,
-        documentName: document?.name || null,
+    let pdfData = null;
+
+    if (document) {
+      try {
+        pdfData = await extractPdfText(document);
+      } catch (error) {
+        alert(error.message);
+        return;
+      }
+    }
+
+    navigate("/processing", {
+      state: {
+        product: {
+          ...formData,
+          imageName: image?.name || null,
+          documentName: document?.name || null,
+          pdfData,
+        },
       },
-    },
-  });
-};
+    });
+  };
 
   return (
     <main className="dashboard">
@@ -84,6 +99,7 @@ function AddProduct() {
       <div className="add-product-header">
 
         <div>
+
           <Link
             to="/products"
             className="back-link"
@@ -96,12 +112,15 @@ function AddProduct() {
             PRODUCT INGESTION
           </p>
 
-          <h1>Add Product</h1>
+          <h1>
+            Add Product
+          </h1>
 
           <p className="page-description">
             Provide limited product information and let
             ForgeIntel build structured product intelligence.
           </p>
+
         </div>
 
       </div>
@@ -116,13 +135,19 @@ function AddProduct() {
         <section className="content-card add-product-card">
 
           <div className="section-header">
+
             <div>
-              <h2>Product Information</h2>
+
+              <h2>
+                Product Information
+              </h2>
 
               <p>
                 Enter whatever information is currently available.
               </p>
+
             </div>
+
           </div>
 
           <div className="form-content">
@@ -155,7 +180,9 @@ function AddProduct() {
 
             <div className="form-group">
 
-              <label>SKU / Part Number</label>
+              <label>
+                SKU / Part Number
+              </label>
 
               <input
                 type="text"
@@ -171,7 +198,9 @@ function AddProduct() {
 
             <div className="form-group">
 
-              <label>Brand</label>
+              <label>
+                Brand
+              </label>
 
               <input
                 type="text"
@@ -187,7 +216,9 @@ function AddProduct() {
 
             <div className="form-group">
 
-              <label>Category</label>
+              <label>
+                Category
+              </label>
 
               <input
                 type="text"
@@ -203,7 +234,9 @@ function AddProduct() {
 
             <div className="form-group">
 
-              <label>Product Website</label>
+              <label>
+                Product Website
+              </label>
 
               <input
                 type="url"
@@ -219,7 +252,9 @@ function AddProduct() {
 
             <div className="form-group full-width">
 
-              <label>Short Description</label>
+              <label>
+                Short Description
+              </label>
 
               <textarea
                 name="description"
@@ -235,26 +270,30 @@ function AddProduct() {
 
         </section>
 
-        {/* RIGHT — FILES */}
+        {/* RIGHT — DIGITAL ASSETS */}
 
         <section className="content-card upload-card">
 
           <div className="section-header">
 
             <div>
-              <h2>Digital Assets</h2>
+
+              <h2>
+                Digital Assets
+              </h2>
 
               <p>
                 Add product images or technical documents
                 when available.
               </p>
+
             </div>
 
           </div>
 
           <div className="upload-content">
 
-            {/* IMAGE */}
+            {/* PRODUCT IMAGE */}
 
             <div className="upload-section">
 
@@ -263,6 +302,7 @@ function AddProduct() {
               </label>
 
               {!image ? (
+
                 <label className="upload-box">
 
                   <Image size={25} />
@@ -283,7 +323,9 @@ function AddProduct() {
                   />
 
                 </label>
+
               ) : (
+
                 <div className="selected-file">
 
                   <div className="selected-file-icon">
@@ -291,6 +333,7 @@ function AddProduct() {
                   </div>
 
                   <div>
+
                     <strong>
                       {image.name}
                     </strong>
@@ -298,6 +341,7 @@ function AddProduct() {
                     <span>
                       Product image selected
                     </span>
+
                   </div>
 
                   <button
@@ -309,11 +353,12 @@ function AddProduct() {
                   </button>
 
                 </div>
+
               )}
 
             </div>
 
-            {/* DOCUMENT */}
+            {/* TECHNICAL DOCUMENT */}
 
             <div className="upload-section">
 
@@ -322,6 +367,7 @@ function AddProduct() {
               </label>
 
               {!document ? (
+
                 <label className="upload-box">
 
                   <FileText size={25} />
@@ -331,18 +377,20 @@ function AddProduct() {
                   </strong>
 
                   <span>
-                    PDF, DOC or TXT
+                    PDF technical documents
                   </span>
 
                   <input
                     type="file"
-                    accept=".pdf,.doc,.docx,.txt"
+                    accept=".pdf,application/pdf"
                     onChange={handleDocument}
                     hidden
                   />
 
                 </label>
+
               ) : (
+
                 <div className="selected-file">
 
                   <div className="selected-file-icon">
@@ -350,13 +398,15 @@ function AddProduct() {
                   </div>
 
                   <div>
+
                     <strong>
                       {document.name}
                     </strong>
 
                     <span>
-                      Technical document selected
+                      PDF technical document selected
                     </span>
+
                   </div>
 
                   <button
@@ -368,6 +418,7 @@ function AddProduct() {
                   </button>
 
                 </div>
+
               )}
 
             </div>
@@ -379,15 +430,17 @@ function AddProduct() {
               <Sparkles size={19} />
 
               <div>
+
                 <strong>
                   ForgeIntel Intelligence Engine
                 </strong>
 
                 <p>
-                  Product information, documents and
-                  digital assets will be analyzed to
-                  extract and enrich structured attributes.
+                  Product information and technical
+                  documents will be analyzed to extract
+                  and enrich structured attributes.
                 </p>
+
               </div>
 
             </div>
