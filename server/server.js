@@ -24,7 +24,9 @@ await connectDatabase();
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+    ],
     credentials: true,
   })
 );
@@ -96,14 +98,5 @@ app.use((error, req, res, next) => {
 // =====================================================
 
 app.listen(PORT, () => {
-  console.log(`
-ForgeIntel Server
--------------------------
-API: http://localhost:${PORT}
-Health: http://localhost:${PORT}/api/health
-Products: http://localhost:${PORT}/api/products
-Intelligence: http://localhost:${PORT}/api/intelligence
-Status: Operational
--------------------------
-  `);
+  console.log(`ForgeIntel server running on port ${PORT}`);
 });
