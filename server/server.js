@@ -6,11 +6,9 @@ import { connectDatabase } from "./config/db.js";
 import productRoutes from "./routes/productRoutes.js";
 import intelligenceRoutes from "./routes/intelligenceRoutes.js";
 
-
 dotenv.config();
 
 const app = express();
-
 const PORT = process.env.PORT || 5000;
 
 
@@ -34,7 +32,6 @@ app.use(
     credentials: true,
   })
 );
-
 
 app.use(
   express.json({
