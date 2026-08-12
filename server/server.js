@@ -6,17 +6,20 @@ import { connectDatabase } from "./config/db.js";
 import productRoutes from "./routes/productRoutes.js";
 import intelligenceRoutes from "./routes/intelligenceRoutes.js";
 
+
 dotenv.config();
 
 const app = express();
 
 const PORT = process.env.PORT || 5000;
 
+
 // =====================================================
 // DATABASE
 // =====================================================
 
 await connectDatabase();
+
 
 // =====================================================
 // MIDDLEWARE
@@ -26,16 +29,19 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
+      "https://forge-intel-five.vercel.app",
     ],
     credentials: true,
   })
 );
+
 
 app.use(
   express.json({
     limit: "10mb",
   })
 );
+
 
 // =====================================================
 // HEALTH CHECK
@@ -51,6 +57,7 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+
 // =====================================================
 // PRODUCT ROUTES
 // =====================================================
@@ -60,6 +67,7 @@ app.use(
   productRoutes
 );
 
+
 // =====================================================
 // INTELLIGENCE ROUTES
 // =====================================================
@@ -68,6 +76,7 @@ app.use(
   "/api/intelligence",
   intelligenceRoutes
 );
+
 
 // =====================================================
 // 404
@@ -79,6 +88,7 @@ app.use((req, res) => {
     message: "API route not found",
   });
 });
+
 
 // =====================================================
 // ERROR HANDLER
@@ -93,10 +103,13 @@ app.use((error, req, res, next) => {
   });
 });
 
+
 // =====================================================
 // START SERVER
 // =====================================================
 
 app.listen(PORT, () => {
-  console.log(`ForgeIntel server running on port ${PORT}`);
+  console.log(
+    `ForgeIntel server running on port ${PORT}`
+  );
 });
