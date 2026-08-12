@@ -21,20 +21,48 @@ function Dashboard() {
   );
 
   // =====================================================
+  // GET DELETED PRODUCT IDS
+  // =====================================================
+
+  const deletedProductIds = new Set(
+    JSON.parse(
+      localStorage.getItem(
+        "forgeintel_deleted_products"
+      ) || "[]"
+    ).map((id) => String(id))
+  );
+
+  // =====================================================
+  // REMOVE DELETED SAVED PRODUCTS
+  // =====================================================
+
+  const activeSavedProducts =
+    savedProducts.filter(
+      (product) =>
+        !deletedProductIds.has(
+          String(product.id)
+        )
+    );
+
+  // =====================================================
   // COMBINE SAVED + DEMO PRODUCTS
   // =====================================================
 
   const savedProductIds = new Set(
-    savedProducts.map((product) =>
+    activeSavedProducts.map((product) =>
       String(product.id)
     )
   );
 
   const catalogProducts = [
-    ...savedProducts,
+    ...activeSavedProducts,
+
     ...demoProducts.filter(
       (product) =>
         !savedProductIds.has(
+          String(product.id)
+        ) &&
+        !deletedProductIds.has(
           String(product.id)
         )
     ),
@@ -351,7 +379,7 @@ function Dashboard() {
                 {/* CATEGORY */}
 
                 <span className="category">
-                  {product.category}
+                  {product.category || "Uncategorized"}
                 </span>
 
 
@@ -388,8 +416,7 @@ function Dashboard() {
                   }`}
                 >
 
-                  {product.status ===
-                  "Verified" ? (
+                  {product.status === "Verified" ? (
 
                     <CheckCircle2 size={15} />
 
@@ -399,7 +426,7 @@ function Dashboard() {
 
                   )}
 
-                  {product.status}
+                  {product.status || "Needs Review"}
 
                 </span>
 

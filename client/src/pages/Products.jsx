@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   ChevronRight,
   Plus,
+  Trash2,
 } from "lucide-react";
 
 import { products as demoProducts } from "../data/products";
@@ -17,6 +18,7 @@ function Products() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
   const [category, setCategory] = useState("All");
+  const [refresh, setRefresh] = useState(0);
 
   // =====================================================
   // GET ALL PRODUCTS
@@ -27,22 +29,35 @@ function Products() {
       localStorage.getItem("forgeintel_products") || "[]"
     );
 
+    const deletedProductIds = JSON.parse(
+      localStorage.getItem("forgeintel_deleted_products") || "[]"
+    );
+
+    const deletedIds = new Set(
+      deletedProductIds.map((id) => String(id))
+    );
+
     const productMap = new Map();
 
     // Generated products first
     savedProducts.forEach((product) => {
-      productMap.set(String(product.id), product);
+      if (!deletedIds.has(String(product.id))) {
+        productMap.set(String(product.id), product);
+      }
     });
 
-    // Add demo products only if ID does not already exist
+    // Add demo products only if not deleted
     demoProducts.forEach((product) => {
-      if (!productMap.has(String(product.id))) {
+      if (
+        !productMap.has(String(product.id)) &&
+        !deletedIds.has(String(product.id))
+      ) {
         productMap.set(String(product.id), product);
       }
     });
 
     return Array.from(productMap.values());
-  }, []);
+  }, [refresh]);
 
   // =====================================================
   // CATEGORIES
@@ -58,6 +73,67 @@ function Products() {
       ),
     ];
   }, [allProducts]);
+
+  // =====================================================
+  // DELETE PRODUCT
+  // =====================================================
+
+  const handleDelete = (productId, productName) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete "${productName}"?`
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    // ---------------------------------------------
+    // REMOVE FROM GENERATED PRODUCTS
+    // ---------------------------------------------
+
+    const savedProducts = JSON.parse(
+      localStorage.getItem("forgeintel_products") || "[]"
+    );
+
+    const updatedProducts = savedProducts.filter(
+      (product) =>
+        String(product.id) !== String(productId)
+    );
+
+    localStorage.setItem(
+      "forgeintel_products",
+      JSON.stringify(updatedProducts)
+    );
+
+    // ---------------------------------------------
+    // STORE DELETED ID
+    // This also prevents demo products from returning
+    // ---------------------------------------------
+
+    const deletedProductIds = JSON.parse(
+      localStorage.getItem(
+        "forgeintel_deleted_products"
+      ) || "[]"
+    );
+
+    const updatedDeletedIds = [
+      ...new Set([
+        ...deletedProductIds.map(String),
+        String(productId),
+      ]),
+    ];
+
+    localStorage.setItem(
+      "forgeintel_deleted_products",
+      JSON.stringify(updatedDeletedIds)
+    );
+
+    // ---------------------------------------------
+    // UPDATE PAGE
+    // ---------------------------------------------
+
+    setRefresh((previous) => previous + 1);
+  };
 
   // =====================================================
   // FILTER PRODUCTS
@@ -245,7 +321,7 @@ function Products() {
             <span>Category</span>
             <span>Confidence</span>
             <span>Status</span>
-            <span></span>
+            <span>Actions</span>
 
           </div>
 
@@ -335,15 +411,34 @@ function Products() {
                 </span>
 
 
-                {/* VIEW */}
+                {/* ACTIONS */}
 
-                <Link
-                  to={`/products/${product.id}`}
-                  className="view-product"
-                >
-                  View
-                  <ChevronRight size={16} />
-                </Link>
+                <div className="product-actions">
+
+                  <Link
+                    to={`/products/${product.id}`}
+                    className="view-product"
+                  >
+                    View
+                    <ChevronRight size={16} />
+                  </Link>
+
+
+                  <button
+                    type="button"
+                    className="delete-product"
+                    onClick={() =>
+                      handleDelete(
+                        product.id,
+                        product.name
+                      )
+                    }
+                    title="Delete Product"
+                  >
+                    <Trash2 size={17} />
+                  </button>
+
+                </div>
 
               </div>
 
