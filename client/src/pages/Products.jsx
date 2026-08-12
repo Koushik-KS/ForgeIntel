@@ -19,21 +19,34 @@ function Products() {
   const [category, setCategory] = useState("All");
 
   // =====================================================
-  // PRODUCTS
+  // GET GENERATED PRODUCTS FROM LOCAL STORAGE
   // =====================================================
 
-  const generatedProduct = JSON.parse(
-    localStorage.getItem("forgeintel_generated_product") || "null"
+  const savedProducts = JSON.parse(
+    localStorage.getItem("forgeintel_products") || "[]"
   );
 
-  const allProducts = generatedProduct
-    ? [
-        generatedProduct,
-        ...products.filter(
-          (product) => product.id !== generatedProduct.id
-        ),
-      ]
-    : products;
+  // =====================================================
+  // COMBINE GENERATED + STATIC PRODUCTS
+  // REMOVE DUPLICATES
+  // =====================================================
+
+  const allProducts = useMemo(() => {
+    const productMap = new Map();
+
+    // Static demo products
+    products.forEach((product) => {
+      productMap.set(String(product.id), product);
+    });
+
+    // Generated products
+    // Generated products override same ID
+    savedProducts.forEach((product) => {
+      productMap.set(String(product.id), product);
+    });
+
+    return Array.from(productMap.values()).reverse();
+  }, []);
 
   // =====================================================
   // CATEGORIES
@@ -42,7 +55,9 @@ function Products() {
   const categories = [
     "All",
     ...new Set(
-      allProducts.map((product) => product.category)
+      allProducts
+        .map((product) => product.category)
+        .filter(Boolean)
     ),
   ];
 
@@ -51,13 +66,20 @@ function Products() {
   // =====================================================
 
   const filteredProducts = useMemo(() => {
-    return allProducts.filter((product) => {
-      const searchText = search.toLowerCase().trim();
+    const searchText = search.toLowerCase().trim();
 
+    return allProducts.filter((product) => {
       const matchesSearch =
-        product.name?.toLowerCase().includes(searchText) ||
-        product.sku?.toLowerCase().includes(searchText) ||
-        product.brand?.toLowerCase().includes(searchText);
+        !searchText ||
+        product.name
+          ?.toLowerCase()
+          .includes(searchText) ||
+        product.sku
+          ?.toLowerCase()
+          .includes(searchText) ||
+        product.brand
+          ?.toLowerCase()
+          .includes(searchText);
 
       const matchesStatus =
         status === "All" ||
@@ -73,7 +95,12 @@ function Products() {
         matchesCategory
       );
     });
-  }, [allProducts, search, status, category]);
+  }, [
+    allProducts,
+    search,
+    status,
+    category,
+  ]);
 
   // =====================================================
   // RENDER
@@ -115,7 +142,6 @@ function Products() {
 
       </div>
 
-
       {/* =================================================
           PRODUCT CATALOG
       ================================================= */}
@@ -143,7 +169,6 @@ function Products() {
 
           </div>
 
-
           <div className="filter-group">
 
             <Filter size={17} />
@@ -168,7 +193,6 @@ function Products() {
               </option>
 
             </select>
-
 
             <select
               value={category}
@@ -196,7 +220,6 @@ function Products() {
 
         </div>
 
-
         {/* =================================================
             SUMMARY
         ================================================= */}
@@ -220,7 +243,6 @@ function Products() {
           </span>
 
         </div>
-
 
         {/* =================================================
             TABLE
@@ -249,7 +271,6 @@ function Products() {
             <span></span>
 
           </div>
-
 
           {filteredProducts.length > 0 ? (
 
@@ -284,13 +305,11 @@ function Products() {
 
                 </div>
 
-
                 {/* CATEGORY */}
 
                 <span className="category">
-                  {product.category}
+                  {product.category || "Uncategorized"}
                 </span>
-
 
                 {/* CONFIDENCE */}
 
@@ -300,7 +319,9 @@ function Products() {
 
                     <div
                       style={{
-                        width: `${product.confidence || 0}%`,
+                        width: `${
+                          product.confidence || 0
+                        }%`,
                       }}
                     />
 
@@ -311,7 +332,6 @@ function Products() {
                   </span>
 
                 </div>
-
 
                 {/* STATUS */}
 
@@ -333,10 +353,9 @@ function Products() {
 
                   )}
 
-                  {product.status}
+                  {product.status || "Needs Review"}
 
                 </span>
-
 
                 {/* VIEW */}
 

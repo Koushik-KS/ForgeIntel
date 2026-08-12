@@ -26,6 +26,7 @@ function AddProduct() {
 
   const [image, setImage] = useState(null);
   const [document, setDocument] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -60,6 +61,10 @@ function AddProduct() {
     setDocument(null);
   };
 
+  // =====================================================
+  // GENERATE PRODUCT INTELLIGENCE
+  // =====================================================
+
   const handleGenerate = async (event) => {
     event.preventDefault();
 
@@ -68,27 +73,69 @@ function AddProduct() {
       return;
     }
 
-    let pdfData = null;
+    setLoading(true);
 
-    if (document) {
-      try {
+    try {
+      let pdfData = null;
+
+      // Extract PDF text before sending to backend
+      if (document) {
         pdfData = await extractPdfText(document);
-      } catch (error) {
-        alert(error.message);
-        return;
       }
-    }
 
-    navigate("/processing", {
-      state: {
-        product: {
-          ...formData,
-          imageName: image?.name || null,
-          documentName: document?.name || null,
-          pdfData,
+      const response = await fetch(
+        "http://localhost:5000/api/intelligence/generate",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            ...formData,
+
+            imageName:
+              image?.name || null,
+
+            documentName:
+              document?.name || null,
+
+            pdfData,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            data.error ||
+            "Failed to generate product intelligence."
+        );
+      }
+
+      // Send generated product to Processing page
+      navigate("/processing", {
+        state: {
+          product: data.product,
         },
-      },
-    });
+      });
+
+    } catch (error) {
+      console.error(
+        "Product intelligence generation error:",
+        error
+      );
+
+      alert(
+        error.message ||
+          "Failed to generate product intelligence."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -125,6 +172,7 @@ function AddProduct() {
 
       </div>
 
+
       <form
         className="add-product-layout"
         onSubmit={handleGenerate}
@@ -150,6 +198,7 @@ function AddProduct() {
 
           </div>
 
+
           <div className="form-content">
 
             {/* PRODUCT NAME */}
@@ -167,6 +216,7 @@ function AddProduct() {
                 placeholder="e.g. Industrial Hydraulic Pump"
                 value={formData.name}
                 onChange={handleChange}
+                disabled={loading}
               />
 
               <small>
@@ -175,6 +225,7 @@ function AddProduct() {
               </small>
 
             </div>
+
 
             {/* SKU */}
 
@@ -190,9 +241,11 @@ function AddProduct() {
                 placeholder="e.g. HYD-450"
                 value={formData.sku}
                 onChange={handleChange}
+                disabled={loading}
               />
 
             </div>
+
 
             {/* BRAND */}
 
@@ -208,9 +261,11 @@ function AddProduct() {
                 placeholder="e.g. Hydronex"
                 value={formData.brand}
                 onChange={handleChange}
+                disabled={loading}
               />
 
             </div>
+
 
             {/* CATEGORY */}
 
@@ -226,9 +281,11 @@ function AddProduct() {
                 placeholder="e.g. Hydraulic Equipment"
                 value={formData.category}
                 onChange={handleChange}
+                disabled={loading}
               />
 
             </div>
+
 
             {/* WEBSITE */}
 
@@ -244,9 +301,11 @@ function AddProduct() {
                 placeholder="https://manufacturer.com/product"
                 value={formData.website}
                 onChange={handleChange}
+                disabled={loading}
               />
 
             </div>
+
 
             {/* DESCRIPTION */}
 
@@ -262,6 +321,7 @@ function AddProduct() {
                 placeholder="Enter any available product description..."
                 value={formData.description}
                 onChange={handleChange}
+                disabled={loading}
               />
 
             </div>
@@ -269,6 +329,7 @@ function AddProduct() {
           </div>
 
         </section>
+
 
         {/* RIGHT — DIGITAL ASSETS */}
 
@@ -290,6 +351,7 @@ function AddProduct() {
             </div>
 
           </div>
+
 
           <div className="upload-content">
 
@@ -320,6 +382,7 @@ function AddProduct() {
                     accept="image/png,image/jpeg,image/webp"
                     onChange={handleImage}
                     hidden
+                    disabled={loading}
                   />
 
                 </label>
@@ -348,6 +411,7 @@ function AddProduct() {
                     type="button"
                     onClick={removeImage}
                     className="remove-file"
+                    disabled={loading}
                   >
                     <X size={17} />
                   </button>
@@ -357,6 +421,7 @@ function AddProduct() {
               )}
 
             </div>
+
 
             {/* TECHNICAL DOCUMENT */}
 
@@ -385,6 +450,7 @@ function AddProduct() {
                     accept=".pdf,application/pdf"
                     onChange={handleDocument}
                     hidden
+                    disabled={loading}
                   />
 
                 </label>
@@ -413,6 +479,7 @@ function AddProduct() {
                     type="button"
                     onClick={removeDocument}
                     className="remove-file"
+                    disabled={loading}
                   >
                     <X size={17} />
                   </button>
@@ -422,6 +489,7 @@ function AddProduct() {
               )}
 
             </div>
+
 
             {/* INFO */}
 
@@ -449,6 +517,7 @@ function AddProduct() {
 
         </section>
 
+
         {/* ACTION */}
 
         <div className="add-product-actions">
@@ -463,9 +532,13 @@ function AddProduct() {
           <button
             type="submit"
             className="generate-button"
+            disabled={loading}
           >
             <Sparkles size={18} />
-            Generate Intelligence
+
+            {loading
+              ? "Generating..."
+              : "Generate Intelligence"}
           </button>
 
         </div>

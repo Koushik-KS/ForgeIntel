@@ -11,7 +11,10 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-import { generateProductIntelligence } from "../services/intelligenceEngine";
+import {
+  generateProductIntelligence,
+} from "../services/intelligenceEngine";
+
 
 const processingSteps = [
   {
@@ -58,6 +61,7 @@ const processingSteps = [
   },
 ];
 
+
 function Processing() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -66,6 +70,14 @@ function Processing() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [complete, setComplete] = useState(false);
+
+  const [intelligence, setIntelligence] =
+    useState(null);
+
+
+  // =====================================================
+  // PROCESS PRODUCT
+  // =====================================================
 
   useEffect(() => {
     if (!product) {
@@ -83,41 +95,101 @@ function Processing() {
       timers.push(timer);
     });
 
+
     const finishTimer = setTimeout(() => {
-      const intelligence =
+
+      // ================================================
+      // GENERATE PRODUCT INTELLIGENCE
+      // ================================================
+
+      const generatedIntelligence =
         generateProductIntelligence(product);
+
+
+      // ================================================
+      // GET EXISTING PRODUCTS
+      // ================================================
+
+      const savedProducts =
+        JSON.parse(
+          localStorage.getItem(
+            "forgeintel_products"
+          ) || "[]"
+        );
+
+
+      // ================================================
+      // ADD NEW PRODUCT
+      // ================================================
+
+      const updatedProducts = [
+        ...savedProducts,
+        generatedIntelligence,
+      ];
+
+
+      // ================================================
+      // SAVE ALL PRODUCTS
+      // ================================================
+
+      localStorage.setItem(
+        "forgeintel_products",
+        JSON.stringify(updatedProducts)
+      );
+
+
+      // ================================================
+      // SAVE CURRENT GENERATED PRODUCT
+      // Keep temporarily for compatibility
+      // ================================================
 
       localStorage.setItem(
         "forgeintel_generated_product",
-        JSON.stringify(intelligence)
+        JSON.stringify(generatedIntelligence)
       );
 
+
+      // ================================================
+      // SAVE IN COMPONENT STATE
+      // ================================================
+
+      setIntelligence(generatedIntelligence);
+
       setComplete(true);
+
     }, processingSteps.length * 900 + 500);
 
+
     timers.push(finishTimer);
+
 
     return () => {
       timers.forEach(clearTimeout);
     };
+
   }, [product, navigate]);
 
+
+  // =====================================================
+  // CONTINUE TO PRODUCT DETAILS
+  // =====================================================
+
   const handleContinue = () => {
-    const intelligence =
-      generateProductIntelligence(product);
+    if (!intelligence) {
+      return;
+    }
 
-    localStorage.setItem(
-      "forgeintel_generated_product",
-      JSON.stringify(intelligence)
+    navigate(
+      `/products/${intelligence.id}`
     );
-
-    navigate(`/products/${intelligence.id}`);
   };
+
 
   return (
     <main className="dashboard processing-page">
 
       <div className="processing-wrapper">
+
 
         {/* HEADER */}
 
@@ -144,6 +216,7 @@ function Processing() {
 
         </div>
 
+
         {/* PROGRESS */}
 
         <section className="content-card processing-card">
@@ -161,7 +234,7 @@ function Processing() {
                     100
                   )}%`,
                 }}
-              ></div>
+              />
 
             </div>
 
@@ -173,6 +246,7 @@ function Processing() {
 
           </div>
 
+
           {/* PROCESSING STEPS */}
 
           <div className="processing-steps">
@@ -182,11 +256,13 @@ function Processing() {
               const Icon = step.icon;
 
               const isComplete =
-                complete || currentStep > step.id;
+                complete ||
+                currentStep > step.id;
 
               const isCurrent =
                 !complete &&
                 currentStep === step.id;
+
 
               return (
                 <div
@@ -215,6 +291,7 @@ function Processing() {
 
                   </div>
 
+
                   <div className="step-content">
 
                     <strong>
@@ -226,6 +303,7 @@ function Processing() {
                     </p>
 
                   </div>
+
 
                   <div className="step-status">
 
@@ -239,14 +317,14 @@ function Processing() {
 
                 </div>
               );
-
             })}
 
           </div>
 
+
           {/* COMPLETE */}
 
-          {complete && (
+          {complete && intelligence && (
 
             <div className="processing-complete">
 
@@ -255,14 +333,17 @@ function Processing() {
               </div>
 
               <div>
+
                 <strong>
                   Product intelligence generated
                 </strong>
 
                 <p>
                   ForgeIntel has completed extraction,
-                  enrichment and validation.
+                  enrichment and validation and saved
+                  the product intelligence.
                 </p>
+
               </div>
 
               <button
@@ -285,5 +366,6 @@ function Processing() {
     </main>
   );
 }
+
 
 export default Processing;

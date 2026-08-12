@@ -23,24 +23,23 @@ function ProductDetails() {
   // =====================================================
 
   const getProduct = () => {
-    const generatedProduct = JSON.parse(
-      localStorage.getItem(
-        "forgeintel_generated_product"
-      ) || "null"
+    // Get all generated products
+    const generatedProducts = JSON.parse(
+      localStorage.getItem("forgeintel_products") || "[]"
     );
 
+    // Find generated product using ID
+    const generatedProduct = generatedProducts.find(
+      (item) => String(item.id) === String(id)
+    );
+
+    // Find static demo product
     const staticProduct = products.find(
       (item) => item.id === Number(id)
     );
 
-    if (
-      generatedProduct?.id &&
-      String(generatedProduct.id) === String(id)
-    ) {
-      return generatedProduct;
-    }
-
-    return staticProduct;
+    // Generated product has priority
+    return generatedProduct || staticProduct;
   };
 
   const [product, setProduct] = useState(getProduct);
@@ -48,10 +47,11 @@ function ProductDetails() {
   const [editingAttribute, setEditingAttribute] =
     useState(null);
 
-  const [editValue, setEditValue] = useState("");
+  const [editValue, setEditValue] =
+    useState("");
 
   // =====================================================
-  // REFRESH PRODUCT
+  // REFRESH PRODUCT WHEN ID CHANGES
   // =====================================================
 
   useEffect(() => {
@@ -65,10 +65,32 @@ function ProductDetails() {
   const saveProduct = (updatedProduct) => {
     setProduct(updatedProduct);
 
-    if (
-      updatedProduct.id &&
-      String(updatedProduct.id) === String(id)
-    ) {
+    // Get all generated products
+    const generatedProducts = JSON.parse(
+      localStorage.getItem("forgeintel_products") || "[]"
+    );
+
+    // Check whether this is a generated product
+    const productExists = generatedProducts.some(
+      (item) =>
+        String(item.id) === String(updatedProduct.id)
+    );
+
+    // Update generated product
+    if (productExists) {
+      const updatedProducts = generatedProducts.map(
+        (item) =>
+          String(item.id) === String(updatedProduct.id)
+            ? updatedProduct
+            : item
+      );
+
+      localStorage.setItem(
+        "forgeintel_products",
+        JSON.stringify(updatedProducts)
+      );
+
+      // Keep current generated product updated
       localStorage.setItem(
         "forgeintel_generated_product",
         JSON.stringify(updatedProduct)
@@ -81,27 +103,28 @@ function ProductDetails() {
   // =====================================================
 
   const buildUpdatedProduct = (updatedAttributes) => {
-    const reviewCount =
-      updatedAttributes.filter(
-        (attribute) =>
-          attribute.status === "Needs Review"
-      ).length;
+    const reviewCount = updatedAttributes.filter(
+      (attribute) =>
+        attribute.status === "Needs Review"
+    ).length;
 
-    const verifiedCount =
-      updatedAttributes.filter(
-        (attribute) =>
-          attribute.status === "Verified"
-      ).length;
+    const verifiedCount = updatedAttributes.filter(
+      (attribute) =>
+        attribute.status === "Verified"
+    ).length;
 
     return {
       ...product,
       attributes: updatedAttributes,
+
       reviewCount,
       verifiedCount,
+
       status:
         reviewCount > 0
           ? "Needs Review"
           : "Verified",
+
       confidence:
         calculateConfidence(updatedAttributes),
     };
@@ -112,25 +135,33 @@ function ProductDetails() {
   // =====================================================
 
   const handleAccept = (attributeName) => {
-    const updatedAttributes =
-      product.attributes.map((attribute) => {
+    const updatedAttributes = product.attributes.map(
+      (attribute) => {
         if (attribute.name !== attributeName) {
           return attribute;
         }
 
         return {
           ...attribute,
+
           status: "Verified",
+
           confidence: Math.max(
             attribute.confidence,
             90
           ),
+
           evidence:
             "Attribute reviewed and accepted by human reviewer.",
-          source: "Human Review",
-          evidenceType: "Reviewed",
+
+          source:
+            "Human Review",
+
+          evidenceType:
+            "Reviewed",
         };
-      });
+      }
+    );
 
     const updatedProduct =
       buildUpdatedProduct(updatedAttributes);
@@ -143,25 +174,33 @@ function ProductDetails() {
   // =====================================================
 
   const handleReject = (attributeName) => {
-    const updatedAttributes =
-      product.attributes.map((attribute) => {
+    const updatedAttributes = product.attributes.map(
+      (attribute) => {
         if (attribute.name !== attributeName) {
           return attribute;
         }
 
         return {
           ...attribute,
+
           status: "Needs Review",
+
           confidence: Math.min(
             attribute.confidence,
             60
           ),
+
           evidence:
             "Attribute rejected during human review and requires correction.",
-          source: "Human Review",
-          evidenceType: "Rejected",
+
+          source:
+            "Human Review",
+
+          evidenceType:
+            "Rejected",
         };
-      });
+      }
+    );
 
     const updatedProduct =
       buildUpdatedProduct(updatedAttributes);
@@ -175,6 +214,7 @@ function ProductDetails() {
 
   const handleEdit = (attribute) => {
     setEditingAttribute(attribute.name);
+
     setEditValue(attribute.value);
   };
 
@@ -184,6 +224,7 @@ function ProductDetails() {
 
   const handleCancelEdit = () => {
     setEditingAttribute(null);
+
     setEditValue("");
   };
 
@@ -196,23 +237,35 @@ function ProductDetails() {
       return;
     }
 
-    const updatedAttributes =
-      product.attributes.map((attribute) => {
+    const updatedAttributes = product.attributes.map(
+      (attribute) => {
         if (attribute.name !== attributeName) {
           return attribute;
         }
 
         return {
           ...attribute,
-          value: editValue.trim(),
-          status: "Needs Review",
-          confidence: 85,
+
+          value:
+            editValue.trim(),
+
+          status:
+            "Needs Review",
+
+          confidence:
+            85,
+
           evidence:
             "Attribute value manually edited and requires reviewer approval.",
-          source: "Human Review",
-          evidenceType: "Edited",
+
+          source:
+            "Human Review",
+
+          evidenceType:
+            "Edited",
         };
-      });
+      }
+    );
 
     const updatedProduct =
       buildUpdatedProduct(updatedAttributes);
@@ -220,6 +273,7 @@ function ProductDetails() {
     saveProduct(updatedProduct);
 
     setEditingAttribute(null);
+
     setEditValue("");
   };
 
@@ -562,6 +616,7 @@ function ProductDetails() {
                         autoFocus
                       />
 
+
                       <div className="attribute-editor-actions">
 
                         <button
@@ -576,6 +631,7 @@ function ProductDetails() {
                           <Save size={15} />
                           Save
                         </button>
+
 
                         <button
                           type="button"
@@ -601,6 +657,8 @@ function ProductDetails() {
                   )}
 
 
+                  {/* EVIDENCE */}
+
                   <div className="evidence">
 
                     <FileText size={14} />
@@ -612,28 +670,45 @@ function ProductDetails() {
                   </div>
 
 
+                  {/* SOURCE */}
+
                   <div className="source">
-                    Source: {attribute.source}
+
+                    Source:{" "}
+                    {attribute.source}
+
                   </div>
 
+
+                  {/* EVIDENCE TYPE */}
 
                   <div className="evidence-type">
+
                     Evidence Type:{" "}
                     {attribute.evidenceType}
+
                   </div>
 
 
+                  {/* PDF PAGE */}
+
                   {attribute.page && (
+
                     <div className="source">
+
                       Document Page:{" "}
                       {attribute.page}
+
                     </div>
+
                   )}
 
                 </div>
 
 
-                {/* CONFIDENCE */}
+                {/* =========================================
+                    CONFIDENCE
+                ========================================= */}
 
                 <div className="attribute-confidence">
 
@@ -654,7 +729,9 @@ function ProductDetails() {
                 </div>
 
 
-                {/* STATUS */}
+                {/* =========================================
+                    STATUS
+                ========================================= */}
 
                 <div
                   className={`status ${
@@ -666,9 +743,13 @@ function ProductDetails() {
 
                   {attribute.status ===
                   "Verified" ? (
+
                     <CheckCircle2 size={15} />
+
                   ) : (
+
                     <AlertTriangle size={15} />
+
                   )}
 
                   {attribute.status}
@@ -676,7 +757,9 @@ function ProductDetails() {
                 </div>
 
 
-                {/* REVIEW ACTIONS */}
+                {/* =========================================
+                    REVIEW ACTIONS
+                ========================================= */}
 
                 {attribute.status ===
                   "Needs Review" && (
@@ -799,14 +882,18 @@ function ProductDetails() {
               </h2>
 
               <p>
+
                 {reviewCount} attribute
                 {reviewCount !== 1
                   ? "s"
                   : ""}{" "}
+
                 still require review.
+
               </p>
 
             </div>
+
 
             <div className="status review">
 
@@ -820,9 +907,11 @@ function ProductDetails() {
 
 
           <p className="page-description">
+
             Review the attributes marked as needing
             review and take the appropriate action
             before publishing.
+
           </p>
 
         </section>
@@ -853,5 +942,6 @@ function calculateConfidence(attributes) {
     total / attributes.length
   );
 }
+
 
 export default ProductDetails;
