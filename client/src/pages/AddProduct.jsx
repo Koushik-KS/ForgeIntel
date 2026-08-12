@@ -148,11 +148,9 @@ function AddProduct() {
           body: JSON.stringify({
             ...formData,
 
-            imageName:
-              image?.name || null,
+            imageName: image?.name || null,
 
-            documentName:
-              document?.name || null,
+            documentName: document?.name || null,
 
             pdfData,
           }),
