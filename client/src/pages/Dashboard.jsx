@@ -13,29 +13,32 @@ import { products as demoProducts } from "../data/products";
 
 function Dashboard() {
   // =====================================================
-  // GENERATED PRODUCT
+  // GET SAVED PRODUCTS
   // =====================================================
 
-  const generatedProduct = JSON.parse(
-    localStorage.getItem(
-      "forgeintel_generated_product"
-    ) || "null"
+  const savedProducts = JSON.parse(
+    localStorage.getItem("forgeintel_products") || "[]"
   );
 
   // =====================================================
-  // CATALOG
+  // COMBINE SAVED + DEMO PRODUCTS
   // =====================================================
 
-  const catalogProducts = generatedProduct
-    ? [
-        generatedProduct,
-        ...demoProducts.filter(
-          (product) =>
-            String(product.id) !==
-            String(generatedProduct.id)
-        ),
-      ]
-    : demoProducts;
+  const savedProductIds = new Set(
+    savedProducts.map((product) =>
+      String(product.id)
+    )
+  );
+
+  const catalogProducts = [
+    ...savedProducts,
+    ...demoProducts.filter(
+      (product) =>
+        !savedProductIds.has(
+          String(product.id)
+        )
+    ),
+  ];
 
   // =====================================================
   // STATISTICS
@@ -56,13 +59,23 @@ function Dashboard() {
         product.status === "Needs Review"
     ).length;
 
+  const totalAttributes =
+    catalogProducts.reduce(
+      (total, product) =>
+        total +
+        (product.attributes?.length || 0),
+      0
+    );
+
   const averageConfidence =
     totalProducts > 0
       ? Math.round(
           catalogProducts.reduce(
             (total, product) =>
               total +
-              Number(product.confidence || 0),
+              Number(
+                product.confidence || 0
+              ),
             0
           ) / totalProducts
         )
@@ -100,9 +113,7 @@ function Dashboard() {
   return (
     <main className="dashboard">
 
-      {/* =================================================
-          PAGE HEADER
-      ================================================= */}
+      {/* HEADER */}
 
       <div className="page-header">
 
@@ -134,9 +145,7 @@ function Dashboard() {
       </div>
 
 
-      {/* =================================================
-          STATISTICS
-      ================================================= */}
+      {/* STATISTICS */}
 
       <section className="stats-grid">
 
@@ -159,7 +168,7 @@ function Dashboard() {
             </strong>
 
             <small>
-              Products in catalog
+              {totalAttributes} attributes analyzed
             </small>
 
           </div>
@@ -250,9 +259,7 @@ function Dashboard() {
       </section>
 
 
-      {/* =================================================
-          RECENT PRODUCTS
-      ================================================= */}
+      {/* RECENT PRODUCTS */}
 
       <section className="content-card">
 
@@ -356,7 +363,9 @@ function Dashboard() {
 
                     <div
                       style={{
-                        width: `${product.confidence || 0}%`,
+                        width: `${
+                          product.confidence || 0
+                        }%`,
                       }}
                     />
 
@@ -379,10 +388,15 @@ function Dashboard() {
                   }`}
                 >
 
-                  {product.status === "Verified" ? (
+                  {product.status ===
+                  "Verified" ? (
+
                     <CheckCircle2 size={15} />
+
                   ) : (
+
                     <AlertTriangle size={15} />
+
                   )}
 
                   {product.status}

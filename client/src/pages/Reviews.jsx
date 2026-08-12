@@ -13,33 +13,58 @@ import {
 
 function Reviews() {
   const [search, setSearch] = useState("");
+  const [selectedProductId, setSelectedProductId] =
+    useState("");
   const [refresh, setRefresh] = useState(0);
 
   // =====================================================
-  // GET GENERATED PRODUCT
+  // GET ALL GENERATED PRODUCTS
   // =====================================================
 
-  const generatedProduct = useMemo(() => {
+  const generatedProducts = useMemo(() => {
     return JSON.parse(
-      localStorage.getItem(
-        "forgeintel_generated_product"
-      ) || "null"
+      localStorage.getItem("forgeintel_products") || "[]"
     );
   }, [refresh]);
+
+  // =====================================================
+  // SELECT PRODUCT
+  // =====================================================
+
+  const selectedProduct = useMemo(() => {
+    if (!generatedProducts.length) {
+      return null;
+    }
+
+    if (selectedProductId) {
+      return (
+        generatedProducts.find(
+          (product) =>
+            String(product.id) ===
+            String(selectedProductId)
+        ) || generatedProducts[0]
+      );
+    }
+
+    return generatedProducts[0];
+  }, [
+    generatedProducts,
+    selectedProductId,
+  ]);
 
   // =====================================================
   // GET REVIEW ATTRIBUTES
   // =====================================================
 
   const reviewAttributes = useMemo(() => {
-    if (!generatedProduct?.attributes) {
+    if (!selectedProduct?.attributes) {
       return [];
     }
 
     const searchText =
       search.trim().toLowerCase();
 
-    return generatedProduct.attributes.filter(
+    return selectedProduct.attributes.filter(
       (attribute) => {
         if (
           attribute.status !== "Needs Review"
@@ -62,19 +87,107 @@ function Reviews() {
         );
       }
     );
-  }, [generatedProduct, search]);
+  }, [selectedProduct, search]);
 
   // =====================================================
-  // ACCEPT
+  // SAVE UPDATED PRODUCT
   // =====================================================
 
-  const handleAccept = (attributeName) => {
-    if (!generatedProduct) {
+  const saveUpdatedProduct = (
+    updatedProduct
+  ) => {
+    const updatedProducts =
+      generatedProducts.map((product) =>
+        String(product.id) ===
+        String(updatedProduct.id)
+          ? updatedProduct
+          : product
+      );
+
+    localStorage.setItem(
+      "forgeintel_products",
+      JSON.stringify(updatedProducts)
+    );
+
+    // Keep current generated product updated
+    localStorage.setItem(
+      "forgeintel_generated_product",
+      JSON.stringify(updatedProduct)
+    );
+
+    setRefresh(
+      (previous) => previous + 1
+    );
+  };
+
+  // =====================================================
+  // BUILD UPDATED PRODUCT
+  // =====================================================
+
+  const buildUpdatedProduct = (
+    attributes
+  ) => {
+    if (!selectedProduct) {
+      return null;
+    }
+
+    const verifiedCount =
+      attributes.filter(
+        (attribute) =>
+          attribute.status === "Verified"
+      ).length;
+
+    const reviewCount =
+      attributes.filter(
+        (attribute) =>
+          attribute.status === "Needs Review"
+      ).length;
+
+    const confidence =
+      attributes.length > 0
+        ? Math.round(
+            attributes.reduce(
+              (sum, attribute) =>
+                sum +
+                Number(
+                  attribute.confidence || 0
+                ),
+              0
+            ) / attributes.length
+          )
+        : 0;
+
+    return {
+      ...selectedProduct,
+
+      attributes,
+
+      verifiedCount,
+
+      reviewCount,
+
+      confidence,
+
+      status:
+        reviewCount > 0
+          ? "Needs Review"
+          : "Verified",
+    };
+  };
+
+  // =====================================================
+  // ACCEPT ATTRIBUTE
+  // =====================================================
+
+  const handleAccept = (
+    attributeName
+  ) => {
+    if (!selectedProduct) {
       return;
     }
 
     const attributes =
-      generatedProduct.attributes.map(
+      selectedProduct.attributes.map(
         (attribute) => {
           if (
             attribute.name !== attributeName
@@ -84,35 +197,45 @@ function Reviews() {
 
           return {
             ...attribute,
+
             status: "Verified",
+
             confidence: Math.max(
-              attribute.confidence,
+              Number(attribute.confidence || 0),
               90
             ),
+
             evidence:
               "Attribute reviewed and accepted by human reviewer.",
-            source: "Human Review",
-            evidenceType: "Reviewed",
+
+            source:
+              "Human Review",
+
+            evidenceType:
+              "Reviewed",
           };
         }
       );
 
-    saveUpdatedProduct(
-      attributes
-    );
+    const updatedProduct =
+      buildUpdatedProduct(attributes);
+
+    saveUpdatedProduct(updatedProduct);
   };
 
   // =====================================================
-  // REJECT
+  // REJECT ATTRIBUTE
   // =====================================================
 
-  const handleReject = (attributeName) => {
-    if (!generatedProduct) {
+  const handleReject = (
+    attributeName
+  ) => {
+    if (!selectedProduct) {
       return;
     }
 
     const attributes =
-      generatedProduct.attributes.map(
+      selectedProduct.attributes.map(
         (attribute) => {
           if (
             attribute.name !== attributeName
@@ -122,35 +245,45 @@ function Reviews() {
 
           return {
             ...attribute,
+
             status: "Needs Review",
+
             confidence: Math.min(
-              attribute.confidence,
+              Number(attribute.confidence || 0),
               60
             ),
+
             evidence:
               "Attribute rejected during human review and requires correction.",
-            source: "Human Review",
-            evidenceType: "Rejected",
+
+            source:
+              "Human Review",
+
+            evidenceType:
+              "Rejected",
           };
         }
       );
 
-    saveUpdatedProduct(
-      attributes
-    );
+    const updatedProduct =
+      buildUpdatedProduct(attributes);
+
+    saveUpdatedProduct(updatedProduct);
   };
 
   // =====================================================
-  // EDIT
+  // EDIT ATTRIBUTE
   // =====================================================
 
-  const handleEdit = (attributeName) => {
-    if (!generatedProduct) {
+  const handleEdit = (
+    attributeName
+  ) => {
+    if (!selectedProduct) {
       return;
     }
 
     const attribute =
-      generatedProduct.attributes.find(
+      selectedProduct.attributes.find(
         (item) =>
           item.name === attributeName
       );
@@ -172,7 +305,7 @@ function Reviews() {
     }
 
     const attributes =
-      generatedProduct.attributes.map(
+      selectedProduct.attributes.map(
         (item) => {
           if (
             item.name !== attributeName
@@ -182,85 +315,46 @@ function Reviews() {
 
           return {
             ...item,
-            value: newValue.trim(),
-            status: "Needs Review",
-            confidence: 85,
+
+            value:
+              newValue.trim(),
+
+            status:
+              "Needs Review",
+
+            confidence:
+              85,
+
             evidence:
               "Attribute value manually edited and requires reviewer approval.",
-            source: "Human Review",
-            evidenceType: "Edited",
+
+            source:
+              "Human Review",
+
+            evidenceType:
+              "Edited",
           };
         }
       );
 
-    saveUpdatedProduct(
-      attributes
-    );
+    const updatedProduct =
+      buildUpdatedProduct(attributes);
+
+    saveUpdatedProduct(updatedProduct);
   };
 
   // =====================================================
-  // SAVE
+  // NO GENERATED PRODUCTS
   // =====================================================
 
-  const saveUpdatedProduct = (
-    attributes
-  ) => {
-    const verifiedCount =
-      attributes.filter(
-        (attribute) =>
-          attribute.status === "Verified"
-      ).length;
-
-    const reviewCount =
-      attributes.filter(
-        (attribute) =>
-          attribute.status === "Needs Review"
-      ).length;
-
-    const confidence =
-      attributes.length > 0
-        ? Math.round(
-            attributes.reduce(
-              (sum, attribute) =>
-                sum + attribute.confidence,
-              0
-            ) / attributes.length
-          )
-        : 0;
-
-    const updatedProduct = {
-      ...generatedProduct,
-      attributes,
-      verifiedCount,
-      reviewCount,
-      confidence,
-      status:
-        reviewCount > 0
-          ? "Needs Review"
-          : "Verified",
-    };
-
-    localStorage.setItem(
-      "forgeintel_generated_product",
-      JSON.stringify(updatedProduct)
-    );
-
-    setRefresh(
-      (previous) => previous + 1
-    );
-  };
-
-  // =====================================================
-  // NO GENERATED PRODUCT
-  // =====================================================
-
-  if (!generatedProduct) {
+  if (!generatedProducts.length) {
     return (
       <main className="dashboard">
 
         <div className="page-header">
 
           <div>
+
             <p className="eyebrow">
               HUMAN REVIEW
             </p>
@@ -273,6 +367,7 @@ function Reviews() {
               Review and validate product attributes
               before publishing.
             </p>
+
           </div>
 
         </div>
@@ -284,7 +379,7 @@ function Reviews() {
           </div>
 
           <h2>
-            No product available for review
+            No products available for review
           </h2>
 
           <p>
@@ -342,14 +437,71 @@ function Reviews() {
           <Clock3 size={17} />
 
           <span>
-            {generatedProduct.reviewCount || 0}
-            {" "}
-            pending
+            {selectedProduct?.reviewCount || 0}
+            {" "}pending
           </span>
 
         </div>
 
       </div>
+
+
+      {/* =================================================
+          PRODUCT SELECTOR
+      ================================================= */}
+
+      <section className="content-card review-product-card">
+
+        <div className="section-header">
+
+          <div>
+
+            <h2>
+              Select Product
+            </h2>
+
+            <p>
+              Choose a generated product to review.
+            </p>
+
+          </div>
+
+        </div>
+
+        <select
+          className="review-product-select"
+          value={
+            selectedProductId ||
+            generatedProducts[0]?.id ||
+            ""
+          }
+          onChange={(event) => {
+            setSelectedProductId(
+              event.target.value
+            );
+
+            setSearch("");
+          }}
+        >
+
+          {generatedProducts.map(
+            (product) => (
+
+              <option
+                key={product.id}
+                value={product.id}
+              >
+                {product.name}
+                {" · "}
+                {product.sku || "No SKU"}
+              </option>
+
+            )
+          )}
+
+        </select>
+
+      </section>
 
 
       {/* =================================================
@@ -371,7 +523,7 @@ function Reviews() {
             </span>
 
             <strong>
-              {generatedProduct.reviewCount || 0}
+              {selectedProduct?.reviewCount || 0}
             </strong>
 
           </div>
@@ -392,7 +544,7 @@ function Reviews() {
             </span>
 
             <strong>
-              {generatedProduct.verifiedCount || 0}
+              {selectedProduct?.verifiedCount || 0}
             </strong>
 
           </div>
@@ -413,7 +565,7 @@ function Reviews() {
             </span>
 
             <strong className="product-summary-name">
-              {generatedProduct.name}
+              {selectedProduct?.name}
             </strong>
 
           </div>
@@ -424,7 +576,7 @@ function Reviews() {
 
 
       {/* =================================================
-          PRODUCT
+          SELECTED PRODUCT
       ================================================= */}
 
       <section className="content-card review-product-card">
@@ -434,19 +586,19 @@ function Reviews() {
           <div>
 
             <h2>
-              {generatedProduct.name}
+              {selectedProduct?.name}
             </h2>
 
             <p>
-              {generatedProduct.brand}
+              {selectedProduct?.brand || "No Brand"}
               {" · "}
-              {generatedProduct.sku}
+              {selectedProduct?.sku || "No SKU"}
             </p>
 
           </div>
 
           <Link
-            to={`/products/${generatedProduct.id}`}
+            to={`/products/${selectedProduct?.id}`}
             className="text-button"
           >
             View Product
@@ -459,7 +611,7 @@ function Reviews() {
 
 
       {/* =================================================
-          SEARCH
+          SEARCH + REVIEW LIST
       ================================================= */}
 
       <section className="content-card">
@@ -482,19 +634,21 @@ function Reviews() {
           </div>
 
           <span className="review-count-label">
+
             {reviewAttributes.length}
+
             {" "}
+
             {reviewAttributes.length === 1
               ? "attribute"
               : "attributes"}
+
           </span>
 
         </div>
 
 
-        {/* =================================================
-            REVIEW LIST
-        ================================================= */}
+        {/* REVIEW ATTRIBUTES */}
 
         {reviewAttributes.length > 0 ? (
 
@@ -514,9 +668,7 @@ function Reviews() {
 
                     <div className="review-item-title">
 
-                      <AlertTriangle
-                        size={17}
-                      />
+                      <AlertTriangle size={17} />
 
                       <span>
                         {attribute.name}
@@ -528,22 +680,29 @@ function Reviews() {
                       {attribute.value}
                     </strong>
 
+
+                    {/* EVIDENCE */}
+
                     <div className="review-evidence">
 
-                      <FileText
-                        size={14}
-                      />
+                      <FileText size={14} />
 
                       <span>
-                        {attribute.evidence}
+                        {attribute.evidence ||
+                          "No evidence available"}
                       </span>
 
                     </div>
 
+
+                    {/* SOURCE */}
+
                     <div className="review-source">
 
                       Source:{" "}
-                      {attribute.source}
+
+                      {attribute.source ||
+                        "Unknown"}
 
                       {attribute.page && (
                         <>
@@ -566,14 +725,16 @@ function Reviews() {
 
                       <div
                         style={{
-                          width: `${attribute.confidence}%`,
+                          width: `${
+                            attribute.confidence || 0
+                          }%`,
                         }}
                       />
 
                     </div>
 
                     <strong>
-                      {attribute.confidence}%
+                      {attribute.confidence || 0}%
                     </strong>
 
                   </div>
@@ -592,11 +753,10 @@ function Reviews() {
                         )
                       }
                     >
-                      <CheckCircle2
-                        size={15}
-                      />
+                      <CheckCircle2 size={15} />
                       Accept
                     </button>
+
 
                     <button
                       type="button"
@@ -610,6 +770,7 @@ function Reviews() {
                       Edit
                     </button>
 
+
                     <button
                       type="button"
                       className="review-reject"
@@ -619,9 +780,7 @@ function Reviews() {
                         )
                       }
                     >
-                      <AlertTriangle
-                        size={15}
-                      />
+                      <AlertTriangle size={15} />
                       Reject
                     </button>
 
@@ -640,9 +799,7 @@ function Reviews() {
 
             <div className="reviews-complete-icon">
 
-              <CheckCircle2
-                size={30}
-              />
+              <CheckCircle2 size={30} />
 
             </div>
 
@@ -652,11 +809,12 @@ function Reviews() {
 
             <p>
               There are no attributes currently
-              waiting for human validation.
+              waiting for human validation for this
+              product.
             </p>
 
             <Link
-              to={`/products/${generatedProduct.id}`}
+              to={`/products/${selectedProduct?.id}`}
               className="primary-button"
             >
               View Product

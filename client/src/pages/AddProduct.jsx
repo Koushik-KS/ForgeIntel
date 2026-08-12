@@ -8,12 +8,21 @@ import {
   X,
 } from "lucide-react";
 
-import { Link, useNavigate } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+} from "react-router-dom";
 
 import { extractPdfText } from "../services/pdfExtractor";
 
+
 function AddProduct() {
   const navigate = useNavigate();
+
+
+  // =====================================================
+  // FORM STATE
+  // =====================================================
 
   const [formData, setFormData] = useState({
     name: "",
@@ -24,9 +33,21 @@ function AddProduct() {
     website: "",
   });
 
+
+  // =====================================================
+  // FILE STATES
+  // =====================================================
+
   const [image, setImage] = useState(null);
+
   const [document, setDocument] = useState(null);
+
   const [loading, setLoading] = useState(false);
+
+
+  // =====================================================
+  // HANDLE FORM CHANGE
+  // =====================================================
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -37,6 +58,11 @@ function AddProduct() {
     }));
   };
 
+
+  // =====================================================
+  // HANDLE IMAGE
+  // =====================================================
+
   const handleImage = (event) => {
     const file = event.target.files?.[0];
 
@@ -44,6 +70,11 @@ function AddProduct() {
       setImage(file);
     }
   };
+
+
+  // =====================================================
+  // HANDLE DOCUMENT
+  // =====================================================
 
   const handleDocument = (event) => {
     const file = event.target.files?.[0];
@@ -53,13 +84,24 @@ function AddProduct() {
     }
   };
 
+
+  // =====================================================
+  // REMOVE IMAGE
+  // =====================================================
+
   const removeImage = () => {
     setImage(null);
   };
 
+
+  // =====================================================
+  // REMOVE DOCUMENT
+  // =====================================================
+
   const removeDocument = () => {
     setDocument(null);
   };
+
 
   // =====================================================
   // GENERATE PRODUCT INTELLIGENCE
@@ -68,20 +110,33 @@ function AddProduct() {
   const handleGenerate = async (event) => {
     event.preventDefault();
 
+
+    // Check product name
     if (!formData.name.trim()) {
       alert("Please enter a product name.");
       return;
     }
 
+
     setLoading(true);
+
 
     try {
       let pdfData = null;
 
-      // Extract PDF text before sending to backend
+
+      // ===============================================
+      // EXTRACT PDF TEXT
+      // ===============================================
+
       if (document) {
         pdfData = await extractPdfText(document);
       }
+
+
+      // ===============================================
+      // SEND DATA TO BACKEND
+      // ===============================================
 
       const response = await fetch(
         "http://localhost:5000/api/intelligence/generate",
@@ -106,42 +161,71 @@ function AddProduct() {
         }
       );
 
+
+      // ===============================================
+      // GET RESPONSE
+      // ===============================================
+
       const data = await response.json();
+
+
+      // ===============================================
+      // HANDLE ERROR
+      // ===============================================
 
       if (!response.ok) {
         throw new Error(
           data.message ||
-            data.error ||
-            "Failed to generate product intelligence."
+          data.error ||
+          "Failed to generate product intelligence."
         );
       }
 
-      // Send generated product to Processing page
+
+      // ===============================================
+      // GO TO PROCESSING PAGE
+      // ===============================================
+
       navigate("/processing", {
         state: {
           product: data.product,
         },
       });
 
+
     } catch (error) {
+
       console.error(
         "Product intelligence generation error:",
         error
       );
 
+
       alert(
         error.message ||
-          "Failed to generate product intelligence."
+        "Failed to generate product intelligence."
       );
+
+
     } finally {
+
       setLoading(false);
+
     }
   };
+
+
+  // =====================================================
+  // RENDER
+  // =====================================================
 
   return (
     <main className="dashboard">
 
-      {/* HEADER */}
+
+      {/* =================================================
+          HEADER
+      ================================================= */}
 
       <div className="add-product-header">
 
@@ -155,13 +239,16 @@ function AddProduct() {
             Back to Products
           </Link>
 
+
           <p className="eyebrow">
             PRODUCT INGESTION
           </p>
 
+
           <h1>
             Add Product
           </h1>
+
 
           <p className="page-description">
             Provide limited product information and let
@@ -173,12 +260,19 @@ function AddProduct() {
       </div>
 
 
+      {/* =================================================
+          FORM
+      ================================================= */}
+
       <form
         className="add-product-layout"
         onSubmit={handleGenerate}
       >
 
-        {/* LEFT — PRODUCT INFORMATION */}
+
+        {/* =================================================
+            LEFT — PRODUCT INFORMATION
+        ================================================= */}
 
         <section className="content-card add-product-card">
 
@@ -190,8 +284,10 @@ function AddProduct() {
                 Product Information
               </h2>
 
+
               <p>
-                Enter whatever information is currently available.
+                Enter whatever information is currently
+                available.
               </p>
 
             </div>
@@ -200,6 +296,7 @@ function AddProduct() {
 
 
           <div className="form-content">
+
 
             {/* PRODUCT NAME */}
 
@@ -210,6 +307,7 @@ function AddProduct() {
                 <span>*</span>
               </label>
 
+
               <input
                 type="text"
                 name="name"
@@ -218,6 +316,7 @@ function AddProduct() {
                 onChange={handleChange}
                 disabled={loading}
               />
+
 
               <small>
                 This is the minimum information required
@@ -234,6 +333,7 @@ function AddProduct() {
               <label>
                 SKU / Part Number
               </label>
+
 
               <input
                 type="text"
@@ -255,6 +355,7 @@ function AddProduct() {
                 Brand
               </label>
 
+
               <input
                 type="text"
                 name="brand"
@@ -274,6 +375,7 @@ function AddProduct() {
               <label>
                 Category
               </label>
+
 
               <input
                 type="text"
@@ -295,6 +397,7 @@ function AddProduct() {
                 Product Website
               </label>
 
+
               <input
                 type="url"
                 name="website"
@@ -315,6 +418,7 @@ function AddProduct() {
                 Short Description
               </label>
 
+
               <textarea
                 name="description"
                 rows="5"
@@ -331,7 +435,9 @@ function AddProduct() {
         </section>
 
 
-        {/* RIGHT — DIGITAL ASSETS */}
+        {/* =================================================
+            RIGHT — DIGITAL ASSETS
+        ================================================= */}
 
         <section className="content-card upload-card">
 
@@ -342,6 +448,7 @@ function AddProduct() {
               <h2>
                 Digital Assets
               </h2>
+
 
               <p>
                 Add product images or technical documents
@@ -355,7 +462,10 @@ function AddProduct() {
 
           <div className="upload-content">
 
-            {/* PRODUCT IMAGE */}
+
+            {/* =============================================
+                PRODUCT IMAGE
+            ============================================= */}
 
             <div className="upload-section">
 
@@ -363,19 +473,23 @@ function AddProduct() {
                 Product Image
               </label>
 
+
               {!image ? (
 
                 <label className="upload-box">
 
                   <Image size={25} />
 
+
                   <strong>
                     Upload product image
                   </strong>
 
+
                   <span>
                     PNG, JPG or WEBP
                   </span>
+
 
                   <input
                     type="file"
@@ -392,8 +506,11 @@ function AddProduct() {
                 <div className="selected-file">
 
                   <div className="selected-file-icon">
+
                     <Image size={20} />
+
                   </div>
+
 
                   <div>
 
@@ -401,17 +518,20 @@ function AddProduct() {
                       {image.name}
                     </strong>
 
+
                     <span>
                       Product image selected
                     </span>
 
                   </div>
 
+
                   <button
                     type="button"
                     onClick={removeImage}
                     className="remove-file"
                     disabled={loading}
+                    aria-label="Remove image"
                   >
                     <X size={17} />
                   </button>
@@ -423,7 +543,9 @@ function AddProduct() {
             </div>
 
 
-            {/* TECHNICAL DOCUMENT */}
+            {/* =============================================
+                TECHNICAL DOCUMENT
+            ============================================= */}
 
             <div className="upload-section">
 
@@ -431,19 +553,23 @@ function AddProduct() {
                 Technical Document
               </label>
 
+
               {!document ? (
 
                 <label className="upload-box">
 
                   <FileText size={25} />
 
+
                   <strong>
                     Upload technical document
                   </strong>
 
+
                   <span>
                     PDF technical documents
                   </span>
+
 
                   <input
                     type="file"
@@ -460,8 +586,11 @@ function AddProduct() {
                 <div className="selected-file">
 
                   <div className="selected-file-icon">
+
                     <FileText size={20} />
+
                   </div>
+
 
                   <div>
 
@@ -469,17 +598,20 @@ function AddProduct() {
                       {document.name}
                     </strong>
 
+
                     <span>
                       PDF technical document selected
                     </span>
 
                   </div>
 
+
                   <button
                     type="button"
                     onClick={removeDocument}
                     className="remove-file"
                     disabled={loading}
+                    aria-label="Remove document"
                   >
                     <X size={17} />
                   </button>
@@ -491,17 +623,21 @@ function AddProduct() {
             </div>
 
 
-            {/* INFO */}
+            {/* =============================================
+                FORGEINTEL INFO
+            ============================================= */}
 
             <div className="ingestion-info">
 
               <Sparkles size={19} />
+
 
               <div>
 
                 <strong>
                   ForgeIntel Intelligence Engine
                 </strong>
+
 
                 <p>
                   Product information and technical
@@ -518,7 +654,9 @@ function AddProduct() {
         </section>
 
 
-        {/* ACTION */}
+        {/* =================================================
+            ACTIONS
+        ================================================= */}
 
         <div className="add-product-actions">
 
@@ -529,16 +667,20 @@ function AddProduct() {
             Cancel
           </Link>
 
+
           <button
             type="submit"
             className="generate-button"
             disabled={loading}
           >
+
             <Sparkles size={18} />
+
 
             {loading
               ? "Generating..."
               : "Generate Intelligence"}
+
           </button>
 
         </div>
@@ -548,5 +690,6 @@ function AddProduct() {
     </main>
   );
 }
+
 
 export default AddProduct;

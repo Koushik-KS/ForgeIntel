@@ -11,7 +11,7 @@ import {
   Plus,
 } from "lucide-react";
 
-import { products } from "../data/products";
+import { products as demoProducts } from "../data/products";
 
 function Products() {
   const [search, setSearch] = useState("");
@@ -19,47 +19,45 @@ function Products() {
   const [category, setCategory] = useState("All");
 
   // =====================================================
-  // GET GENERATED PRODUCTS FROM LOCAL STORAGE
-  // =====================================================
-
-  const savedProducts = JSON.parse(
-    localStorage.getItem("forgeintel_products") || "[]"
-  );
-
-  // =====================================================
-  // COMBINE GENERATED + STATIC PRODUCTS
-  // REMOVE DUPLICATES
+  // GET ALL PRODUCTS
   // =====================================================
 
   const allProducts = useMemo(() => {
+    const savedProducts = JSON.parse(
+      localStorage.getItem("forgeintel_products") || "[]"
+    );
+
     const productMap = new Map();
 
-    // Static demo products
-    products.forEach((product) => {
-      productMap.set(String(product.id), product);
-    });
-
-    // Generated products
-    // Generated products override same ID
+    // Generated products first
     savedProducts.forEach((product) => {
       productMap.set(String(product.id), product);
     });
 
-    return Array.from(productMap.values()).reverse();
+    // Add demo products only if ID does not already exist
+    demoProducts.forEach((product) => {
+      if (!productMap.has(String(product.id))) {
+        productMap.set(String(product.id), product);
+      }
+    });
+
+    return Array.from(productMap.values());
   }, []);
 
   // =====================================================
   // CATEGORIES
   // =====================================================
 
-  const categories = [
-    "All",
-    ...new Set(
-      allProducts
-        .map((product) => product.category)
-        .filter(Boolean)
-    ),
-  ];
+  const categories = useMemo(() => {
+    return [
+      "All",
+      ...new Set(
+        allProducts
+          .map((product) => product.category)
+          .filter(Boolean)
+      ),
+    ];
+  }, [allProducts]);
 
   // =====================================================
   // FILTER PRODUCTS
@@ -109,9 +107,7 @@ function Products() {
   return (
     <main className="dashboard">
 
-      {/* =================================================
-          PAGE HEADER
-      ================================================= */}
+      {/* PAGE HEADER */}
 
       <div className="page-header">
 
@@ -142,15 +138,12 @@ function Products() {
 
       </div>
 
-      {/* =================================================
-          PRODUCT CATALOG
-      ================================================= */}
+
+      {/* PRODUCT CATALOG */}
 
       <section className="content-card products-card">
 
-        {/* =================================================
-            SEARCH + FILTERS
-        ================================================= */}
+        {/* SEARCH + FILTERS */}
 
         <div className="catalog-toolbar">
 
@@ -169,6 +162,7 @@ function Products() {
 
           </div>
 
+
           <div className="filter-group">
 
             <Filter size={17} />
@@ -179,7 +173,6 @@ function Products() {
                 setStatus(event.target.value)
               }
             >
-
               <option value="All">
                 All Status
               </option>
@@ -194,15 +187,14 @@ function Products() {
 
             </select>
 
+
             <select
               value={category}
               onChange={(event) =>
                 setCategory(event.target.value)
               }
             >
-
               {categories.map((item) => (
-
                 <option
                   key={item}
                   value={item}
@@ -211,7 +203,6 @@ function Products() {
                     ? "All Categories"
                     : item}
                 </option>
-
               ))}
 
             </select>
@@ -220,9 +211,8 @@ function Products() {
 
         </div>
 
-        {/* =================================================
-            SUMMARY
-        ================================================= */}
+
+        {/* SUMMARY */}
 
         <div className="catalog-summary">
 
@@ -244,33 +234,21 @@ function Products() {
 
         </div>
 
-        {/* =================================================
-            TABLE
-        ================================================= */}
+
+        {/* TABLE */}
 
         <div className="product-table">
 
           <div className="table-header products-header">
 
-            <span>
-              Product
-            </span>
-
-            <span>
-              Category
-            </span>
-
-            <span>
-              Confidence
-            </span>
-
-            <span>
-              Status
-            </span>
-
+            <span>Product</span>
+            <span>Category</span>
+            <span>Confidence</span>
+            <span>Status</span>
             <span></span>
 
           </div>
+
 
           {filteredProducts.length > 0 ? (
 
@@ -305,11 +283,13 @@ function Products() {
 
                 </div>
 
+
                 {/* CATEGORY */}
 
                 <span className="category">
                   {product.category || "Uncategorized"}
                 </span>
+
 
                 {/* CONFIDENCE */}
 
@@ -333,6 +313,7 @@ function Products() {
 
                 </div>
 
+
                 {/* STATUS */}
 
                 <span
@@ -344,18 +325,15 @@ function Products() {
                 >
 
                   {product.status === "Verified" ? (
-
                     <CheckCircle2 size={15} />
-
                   ) : (
-
                     <AlertTriangle size={15} />
-
                   )}
 
                   {product.status || "Needs Review"}
 
                 </span>
+
 
                 {/* VIEW */}
 
@@ -363,11 +341,8 @@ function Products() {
                   to={`/products/${product.id}`}
                   className="view-product"
                 >
-
                   View
-
                   <ChevronRight size={16} />
-
                 </Link>
 
               </div>
