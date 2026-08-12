@@ -39,9 +39,7 @@ function AddProduct() {
   // =====================================================
 
   const [image, setImage] = useState(null);
-
   const [document, setDocument] = useState(null);
-
   const [loading, setLoading] = useState(false);
 
 
@@ -135,11 +133,11 @@ function AddProduct() {
 
 
       // ===============================================
-      // SEND DATA TO BACKEND
+      // SEND DATA TO RENDER BACKEND
       // ===============================================
 
       const response = await fetch(
-        "http://localhost:5000/api/intelligence/generate",
+        "https://forgeintel.onrender.com/api/intelligence/generate",
         {
           method: "POST",
 
@@ -221,7 +219,6 @@ function AddProduct() {
 
   return (
     <main className="dashboard">
-
 
       {/* =================================================
           HEADER
@@ -463,9 +460,7 @@ function AddProduct() {
           <div className="upload-content">
 
 
-            {/* =============================================
-                PRODUCT IMAGE
-            ============================================= */}
+            {/* PRODUCT IMAGE */}
 
             <div className="upload-section">
 
@@ -506,9 +501,7 @@ function AddProduct() {
                 <div className="selected-file">
 
                   <div className="selected-file-icon">
-
                     <Image size={20} />
-
                   </div>
 
 
@@ -543,9 +536,7 @@ function AddProduct() {
             </div>
 
 
-            {/* =============================================
-                TECHNICAL DOCUMENT
-            ============================================= */}
+            {/* TECHNICAL DOCUMENT */}
 
             <div className="upload-section">
 
@@ -586,9 +577,7 @@ function AddProduct() {
                 <div className="selected-file">
 
                   <div className="selected-file-icon">
-
                     <FileText size={20} />
-
                   </div>
 
 
@@ -623,9 +612,7 @@ function AddProduct() {
             </div>
 
 
-            {/* =============================================
-                FORGEINTEL INFO
-            ============================================= */}
+            {/* FORGEINTEL INFO */}
 
             <div className="ingestion-info">
 
